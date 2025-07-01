@@ -40,7 +40,19 @@ python tools/manage.py generate-compose-file <app_name>
 
 Replace <app_name> with the same name you used in step 2.
 
-### 5. Autogenerate API endpoint
+---
+
+## 🧩 Development
+
+### Running migrations
+
+After defining custom model in `api/models/`, generate and migrate with alembic:
+
+```bash
+python tools\manage.py generate-model-route <model_name>
+```
+
+### Autogenerate API endpoint
 
 After defining custom model in `api/models/`, bootstrap api endpoint with:
 
