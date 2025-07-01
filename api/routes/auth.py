@@ -7,7 +7,7 @@ from typing import Annotated, Optional
 from pydantic import BaseModel
 
 from models.application_setting import ApplicationSetting
-from api.models.template import Template
+from models.template import Template
 from models.user import User
 from constants import ApplicationSettings, VerificationMethod
 from database import get_db
