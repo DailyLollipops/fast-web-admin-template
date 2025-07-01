@@ -1,0 +1,101 @@
+name: "{{ app_name }}"
+
+services:
+  {{ app_name }}-mysql:
+    image: mysql:8.0
+    container_name: {{ app_name }}-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - ${MYSQL_PORT}:3306
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - app_network
+
+  {{ app_name }}-redis:
+    image: redis:latest
+    container_name: {{ app_name }}-redis
+    ports:
+      - 6379:6379
+    networks:
+      - app_network
+
+  {{ app_name }}-api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: {{ app_name }}-api
+    ports:
+      - 8000:8000
+    volumes:
+      - ./api:/app
+    command: ["/usr/bin/supervisord"]
+    depends_on:
+      - {{ app_name }}-mysql
+      - {{ app_name }-redis
+    networks:
+      - app_network
+    environment:
+      - PYTHONPATH=/app
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+      - MYSQL_HOST=${MYSQL_HOST}
+      - MYSQL_PORT=${MYSQL_PORT}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - DATABASE_URL=mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - APP_ENV=${APP_ENV}
+      - SECRET_KEY=${SECRET_KEY}
+
+  {{ app_name }}-web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+      args:
+        REACT_APP_API_BASE_URL: ${REACT_APP_API_BASE_URL}
+    container_name: {{ app_name }}-web
+    ports:
+      - 3000:3000
+    volumes:
+      - ./web:/app
+      - /app/node_modules
+      - /app/build
+    command: ["serve", "-s", "build"]
+    depends_on:
+      - {{ app_name }}-api
+    networks:
+      - app_network
+    environment:
+      - REACT_APP_API_BASE_URL=${REACT_APP_API_BASE_URL}
+
+  {{ app_name }}-caddy:
+    image: caddy:latest
+    container_name: {{ app_name }}-caddy
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - {{ app_name }}-web
+      - {{ app_name }}-api
+    networks:
+      - app_network
+
+volumes:
+  mysql_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  app_network:
+    driver: bridge

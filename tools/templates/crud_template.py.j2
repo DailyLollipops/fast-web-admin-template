@@ -1,0 +1,220 @@
+# Generated code for {{ model.__name__ }} model
+
+from datetime import datetime
+from fastapi import APIRouter, HTTPException, Depends
+from pydantic import BaseModel
+from sqlmodel import Session, select, asc, desc
+import typing
+import json
+
+from database import get_db
+from models.user import User
+from models.{{ module }} import {{ model.__name__ }}
+from .auth import get_current_user
+
+router = APIRouter()
+
+
+class ActionResponse(BaseModel):
+    success: bool
+    message: str
+
+
+class {{ model.__name__ }}Create(BaseModel):
+    {%- for field in model.model_fields -%}
+        {% if field != 'id' -%}
+            {% set model_field = model.model_fields[field] -%}
+            {% set annotation = model_field.annotation -%}
+            {%- if 'class' in annotation|string -%}
+                {{ field }}: {{ annotation.__name__ -}}
+            {% else -%}
+                {{ field }}: {{ annotation -}}
+            {% endif -%}
+            {%- if not model_field.is_required() -%}
+                {%- if model_field.default is string -%}
+                    {{ '' }} = '{{ model_field.get_default() }}'
+                {%- else -%}
+                    {{ '' }} = {{  model_field.get_default() }}
+                {%- endif -%}
+            {% endif -%}
+        {%- endif %}
+    {% endfor %}
+
+class {{ model.__name__ }}Response(BaseModel):
+    {% for field in model.model_fields -%}
+        {% set model_field = model.model_fields[field] -%}
+        {% set annotation = model_field.annotation -%}
+        {%- if 'class' in annotation|string -%}
+            {{ field }}: {{ annotation.__name__ -}}
+        {% else -%}
+            {{ field }}: {{ annotation -}}
+        {% endif -%}
+        {%- if not model_field.is_required() -%}
+            {{ '' }} = None
+        {%- endif %}
+    {% endfor %}
+
+class {{ model.__name__ }}Update(BaseModel):
+    {%- for field in model.model_fields -%}
+        {% if field != 'id' -%}
+            {% set model_field = model.model_fields[field] -%}
+            {% set annotation = model_field.annotation -%}
+            {%- if 'class' in annotation|string -%}
+                {{ field }}: {{ annotation.__name__ }} = None
+            {%- else -%}
+                {{ field }}: {{ annotation }} = None
+            {%- endif %}
+        {%- endif %}
+    {% endfor %}
+
+@router.post('/{{ model.__name__.lower() }}', response_model={{ model.__name__ }}Response, tags=['{{ model.__name__ }}'])
+def create_{{ model.__name__.lower() }}(
+    data: {{ model.__name__ }}Create, 
+    {%- if create_login_required %}{{ '\n\t' }}current_user: typing.Annotated[User, Depends(get_current_user)], {% endif %}  
+    db: Session = Depends(get_db)
+):
+    try:
+        {%- for field in model.model_fields %}
+            {%- if model.model_fields[field] | getattr('unique', None) == True %}
+        if db.exec(select({{ model.__name__ }}).where({{ model.__name__ }}.{{ field }} == data.{{ field }})).first():
+            raise HTTPException(
+                status_code=400,
+                detail=f'{{ model.__name__ }} with {{ field }} of {data.{{ field }}} already exists'
+            )
+            {% endif %}
+        {%- endfor %}
+        {{ model.__name__.lower() }} = {{ model.__name__ }}(**data.model_dump())
+        db.add({{ model.__name__.lower() }})
+        db.commit()
+        return {{ model.__name__.lower() }}
+    except HTTPException as http_ex:
+        raise http_ex
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get('/{{ model.__name__.lower() }}s', response_model=typing.List[{{ model.__name__ }}Response], tags=['{{ model.__name__ }}'])
+def get_{{ model.__name__.lower() }}s(
+    {%- if read_login_required %}{{ '\n\t' }}current_user: typing.Annotated[User, Depends(get_current_user)], {% endif %} 
+    order_field: str = 'id', 
+    order_by: str = 'desc', 
+    limit: int = None, 
+    offset: int = None, 
+    filters: str = None, 
+    db: Session = Depends(get_db)
+):
+    try:
+        query = select({{ model.__name__ }})
+        if filters:
+            filters_dict = {}
+            filter_exc = HTTPException(status_code=400, detail='Invalid filter parameter')
+            try:
+                filters_dict = json.loads(filters)
+                if not isinstance(filters_dict, dict):
+                    raise filter_exc
+            except Exception:
+                raise filter_exc
+            for key, value in filters_dict.items():
+                if key not in {{ model.__name__ }}.model_fields:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f'{key} is not a valid field'
+                    )
+                column = getattr({{ model.__name__ }}, key)
+                query = query.where(column == value)
+        if order_field is not None:
+            if order_field not in {{ model.__name__ }}.model_fields:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f'{order_field} is not a valid field'
+                )
+            if order_by == 'asc':
+                query = query.order_by(asc(getattr({{ model.__name__ }}, order_field)))
+            else:
+                query = query.order_by(desc(getattr({{ model.__name__ }}, order_field)))
+        if limit is not None:
+            query = query.limit(limit)
+        if offset is not None:
+            query = query.offset(offset)
+        {{ model.__name__.lower() }}s = db.exec(query).all()
+        return {{ model.__name__.lower() }}s
+    except HTTPException as http_ex:
+        raise http_ex
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get('/{{ model.__name__.lower() }}/{id}', response_model={{ model.__name__ }}Response, tags=['{{ model.__name__ }}'])
+def get_{{ model.__name__.lower() }}(
+    {%- if read_login_required %}{{ '\n\t' }}current_user: typing.Annotated[User, Depends(get_current_user)], {% endif %} 
+    id: int, 
+    db: Session = Depends(get_db)
+):
+    try:
+        query = select({{ model.__name__ }}).where({{ model.__name__ }}.id == id)
+        {{ model.__name__.lower() }} = db.exec(query).first()
+        if not {{ model.__name__.lower() }}:
+            raise HTTPException(status_code=404, detail='{{ model.__name__ }} not found')
+        return {{ model.__name__.lower() }}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.patch('/{{ model.__name__.lower() }}/{id}', response_model={{ model.__name__ }}Response, tags=['{{ model.__name__ }}'])
+def update_{{ model.__name__.lower() }}(
+    id: int, 
+    data: {{ model.__name__ }}Update, 
+    {%- if update_login_required %}{{ '\n\t' }}current_user: typing.Annotated[User, Depends(get_current_user)], {% endif %} 
+    db: Session = Depends(get_db)
+):
+    try:
+        query = select({{ model.__name__ }}).where({{ model.__name__ }}.id == id)
+        {{ model.__name__.lower() }} = db.exec(query).first()
+        if not {{ model.__name__.lower() }}:
+            raise HTTPException(
+                status_code=404,
+                detail='{{ model.__name__ }} not found'
+            )
+            {{ '' }}
+
+        {%- for field in model.model_fields %}
+            {%- if model.model_fields[field] | getattr('unique', None) == True %}
+        if db.exec(select({{ model.__name__ }}).where({{ model.__name__ }}.{{ field }} == data.{{ field }}).where({{ model.__name__ }}.id != {{ model.__name__.lower() }}.id)).first():
+            raise HTTPException(
+                status_code=400,
+                detail=f'{{ model.__name__ }} with {{ field }} of {data.{{ field }}} already exists'
+            )
+            {% endif %}
+        {%- endfor %}
+        data_dict = data.model_dump()
+        for field in data_dict:
+            if hasattr({{ model.__name__.lower() }}, field) and data_dict[field]:
+                setattr({{ model.__name__.lower() }}, field, data_dict[field])
+        
+        db.add({{ model.__name__.lower() }})
+        db.commit()
+        db.refresh({{ model.__name__.lower() }})
+        return {{ model.__name__.lower() }}
+    except HTTPException as http_ex:
+        raise http_ex
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete('/{{ model.__name__.lower() }}/{id}', response_model=ActionResponse, tags=['{{ model.__name__ }}'])
+def delete_{{ model.__name__.lower() }}(
+    id: int, 
+    {%- if delete_login_required %}{{ '\n\t' }}current_user: typing.Annotated[User, Depends(get_current_user)], {% endif %} 
+    db: Session = Depends(get_db)
+):
+    try:
+        query = select({{ model.__name__ }}).where({{ model.__name__ }}.id == id)
+        {{ model.__name__.lower() }} = db.exec(query).first()
+        if not {{ model.__name__.lower() }}:
+            raise HTTPException(status_code=404, detail='{{ model.__name__ }} not found')
+        db.delete({{ model.__name__.lower() }})
+        db.commit()
+        return ActionResponse(
+            success=True,
+            message=f'{{ model.__name__ }} deleted successfully'
+        )
+    except HTTPException as http_ex:
+        raise http_ex
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

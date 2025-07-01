@@ -1,0 +1,11 @@
+# Environment
+__pycache__
+.venv
+.vscode
+.env
+supervisord.pid
+Caddyfile
+node_modules
+
+# Logs
+*.log
