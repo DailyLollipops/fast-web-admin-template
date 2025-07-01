@@ -30,7 +30,7 @@ def generate_env(app_name: str, outfile: str):
 @click.command()
 @click.argument('app_name')
 @click.option('--outfile', '-n', default='docker-compose.yml', help='Output file location')
-def generate_compose(app_name: str, outfile: str):
+def generate_compose_file(app_name: str, outfile: str):
     with open('tools/templates/docker-compose.yml.j2', 'r') as f:
         template_content = f.read()
 
@@ -84,7 +84,7 @@ def generate_model_route(
         file.write(output)
 
 cli.add_command(generate_env)
-cli.add_command(generate_compose)
+cli.add_command(generate_compose_file)
 cli.add_command(generate_model_route)
 
 if __name__ == '__main__':

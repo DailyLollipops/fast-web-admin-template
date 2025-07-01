@@ -36,7 +36,7 @@ services:
     command: ["/usr/bin/supervisord"]
     depends_on:
       - {{ app_name }}-mysql
-      - {{ app_name }-redis
+      - {{ app_name }}-redis
     networks:
       - app_network
     environment:
