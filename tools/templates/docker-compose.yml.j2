@@ -33,7 +33,6 @@ services:
       - 8000:8000
     volumes:
       - ./api:/app
-    command: ["/usr/bin/supervisord"]
     depends_on:
       - {{ app_name }}-mysql
       - {{ app_name }}-redis
@@ -59,6 +58,7 @@ services:
       context: ./web
       dockerfile: Dockerfile
       args:
+        APP_ENV: ${APP_ENV}
         REACT_APP_API_BASE_URL: ${REACT_APP_API_BASE_URL}
     container_name: {{ app_name }}-web
     ports:
@@ -67,12 +67,14 @@ services:
       - ./web:/app
       - /app/node_modules
       - /app/build
-    command: ["serve", "-s", "build"]
+    command: 
+      - /app/api_init.sh
     depends_on:
       - {{ app_name }}-api
     networks:
       - app_network
     environment:
+      - APP_ENV=${APP_ENV}
       - REACT_APP_API_BASE_URL=${REACT_APP_API_BASE_URL}
 
   {{ app_name }}-caddy:
@@ -82,7 +84,7 @@ services:
       - 80:80
       - 443:443
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./Caddyfile.conf:/etc/caddy/Caddyfile
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
@@ -99,3 +101,4 @@ volumes:
 networks:
   app_network:
     driver: bridge
+

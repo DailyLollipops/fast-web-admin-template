@@ -218,3 +218,4 @@ def delete_{{ model.__name__.lower() }}(
         raise http_ex
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
