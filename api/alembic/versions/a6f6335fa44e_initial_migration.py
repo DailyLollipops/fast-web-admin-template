@@ -131,6 +131,7 @@ def upgrade() -> None:
                 'name': 'email_verification',
                 'template_type': 'email',
                 'path': 'templates/emails/email_verification.html.j2',
+                'modified_by_id': 1,
             },
         ]
     )
