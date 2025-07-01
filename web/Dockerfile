@@ -13,7 +13,7 @@ COPY . /app
 
 EXPOSE 5173
 
-RUN npm run build
 RUN npm install -g serve
+RUN chmod +x /app/web_init.sh
 
 CMD ["/app/web_init.sh"]
