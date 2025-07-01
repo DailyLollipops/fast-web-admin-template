@@ -70,6 +70,7 @@ services:
       - /app/node_modules
       - /app/build
     command: 
+      - /bin/sh
       - /app/web_init.sh
     depends_on:
       - {{ app_name }}-api

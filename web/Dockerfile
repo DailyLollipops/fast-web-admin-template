@@ -16,4 +16,4 @@ EXPOSE 5173
 RUN npm install -g serve
 RUN chmod +x /app/web_init.sh
 
-CMD ["/app/web_init.sh"]
+CMD ["/bin/sh", "/app/web_init.sh"]
