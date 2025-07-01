@@ -8,15 +8,7 @@ import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-
-@click.group()
-def cli():
-    pass
-
-@click.command()
-@click.argument('app_name')
-@click.option('--outfile', '-n', default='.env', help='Output file location')
-def generate_env(app_name: str, outfile: str):
+def create_env_file(app_name: str, outfile: str):
     app_key = secrets.token_hex(32)
     with open('tools/templates/env.j2', 'r') as f:
         template_content = f.read()
@@ -27,10 +19,7 @@ def generate_env(app_name: str, outfile: str):
     with open(outfile, "w") as file:
         file.write(output)
 
-@click.command()
-@click.argument('app_name')
-@click.option('--outfile', '-n', default='docker-compose.yml', help='Output file location')
-def generate_compose_file(app_name: str, outfile: str):
+def create_compose_file(app_name: str, outfile: str):
     with open('tools/templates/docker-compose.yml.j2', 'r') as f:
         template_content = f.read()
 
@@ -39,6 +28,47 @@ def generate_compose_file(app_name: str, outfile: str):
 
     with open(outfile, "w") as file:
         file.write(output)
+
+def create_caddy_file(app_name: str, domain: str, outfile: str):
+    with open('tools/templates/Caddyfile.j2', 'r') as f:
+        template_content = f.read()
+
+    template = Template(template_content)
+    output = template.render(app_name=app_name, domain=domain)
+
+    with open(outfile, "w") as file:
+        file.write(output)
+
+@click.group()
+def cli():
+    pass
+
+@click.command()
+@click.argument('app_name')
+@click.option('--outfile', '-n', default='.env', help='Output file location')
+def generate_env(app_name: str, outfile: str):
+    create_env_file(app_name, outfile)
+
+@click.command()
+@click.argument('app_name')
+@click.option('--outfile', '-n', default='docker-compose.yml', help='Output file location')
+def generate_compose_file(app_name: str, outfile: str):
+    create_compose_file(app_name, outfile)
+
+@click.command()
+@click.argument('app_name')
+@click.option('-d', '--domain', default=':80', help='Domain, localhost default')
+@click.option('--outfile', '-n', default='Caddyfile.conf', help='Output file location')
+def generate_caddy_config(app_name: str, domain: str, outfile: str):
+    create_caddy_file(app_name, domain, outfile)
+
+@click.command()
+@click.argument('app_name')
+@click.option('-d', '--domain', default=':80', help='Domain, localhost default')
+def bootstrap(app_name: str, domain: str):
+    create_env_file(app_name, '.env')
+    create_compose_file(app_name, 'docker-compose.yml')
+    create_caddy_file(app_name, domain, 'Caddyfile.conf')
 
 @click.command()
 @click.argument('model')
@@ -85,6 +115,8 @@ def generate_model_route(
 
 cli.add_command(generate_env)
 cli.add_command(generate_compose_file)
+cli.add_command(generate_caddy_config)
+cli.add_command(bootstrap)
 cli.add_command(generate_model_route)
 
 if __name__ == '__main__':

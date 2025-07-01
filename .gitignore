@@ -1,11 +1,14 @@
 # Environment
 __pycache__
+node_modules
 .venv
 .vscode
-.env
 supervisord.pid
-Caddyfile
-node_modules
+
+# Generated Files
+.env
+docker-compose.yml
+Caddyfile.conf
 
 # Logs
 *.log
