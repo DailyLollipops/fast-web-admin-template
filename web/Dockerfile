@@ -15,4 +15,5 @@ EXPOSE 5173
 
 RUN npm run build
 RUN npm install -g serve
-CMD sh -c 'if [ "$APP_ENV" != "development" ]; then serve -s build; else npm run dev; fi'
+
+CMD ["/app/web_init.sh"]
