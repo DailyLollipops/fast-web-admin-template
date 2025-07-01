@@ -1,9 +1,11 @@
+from dotenv import load_dotenv
 from jinja2 import Environment, Template
 from sqlmodel import SQLModel
 import click
 import importlib
 import os
 import secrets
+import subprocess
 import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
@@ -39,6 +41,7 @@ def create_caddy_file(app_name: str, domain: str, outfile: str):
     with open(outfile, "w") as file:
         file.write(output)
 
+
 @click.group()
 def cli():
     pass
@@ -69,6 +72,41 @@ def bootstrap(app_name: str, domain: str):
     create_env_file(app_name, '.env')
     create_compose_file(app_name, 'docker-compose.yml')
     create_caddy_file(app_name, domain, 'Caddyfile.conf')
+
+@click.command()
+@click.argument('message')
+def create_migration(message: str):
+    load_dotenv()
+    app_name = os.getenv('APP_NAME')
+    result = subprocess.run([
+        'docker',
+        'compose',
+        'exec',
+        f'{app_name}-api',
+        'alembic',
+        'revision',
+        '--autogenerate',
+        '-m',
+        message
+    ], capture_output=True, text=True)
+    print(result.stdout)
+    print(result.stderr)
+
+@click.command()
+def run_migration():
+    load_dotenv()
+    app_name = os.getenv('APP_NAME')
+    result = subprocess.run([
+        'docker',
+        'compose',
+        'exec',
+        f'{app_name}-api',
+        'alembic',
+        'upgrade',
+        'head',
+    ], capture_output=True, text=True)
+    print(result.stdout)
+    print(result.stderr)
 
 @click.command()
 @click.argument('model')
@@ -117,6 +155,8 @@ cli.add_command(generate_env)
 cli.add_command(generate_compose_file)
 cli.add_command(generate_caddy_config)
 cli.add_command(bootstrap)
+cli.add_command(create_migration)
+cli.add_command(run_migration)
 cli.add_command(generate_model_route)
 
 if __name__ == '__main__':
