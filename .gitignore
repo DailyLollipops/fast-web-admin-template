@@ -1,6 +1,7 @@
 # Environment
 __pycache__
-node_modules
+web/node_modules
+web/build
 .venv
 .vscode
 supervisord.pid
