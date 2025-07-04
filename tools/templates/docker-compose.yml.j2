@@ -78,7 +78,7 @@ services:
       - app_network
     environment:
       - APP_ENV=${APP_ENV}
-      - REACT_APP_API_BASE_URL=${REACT_APP_API_BASE_URL}
+      - VITE_BASE_API_URL=${VITE_BASE_API_URL}
 
   {{ app_name }}-caddy:
     image: caddy:latest
