@@ -19,7 +19,7 @@ import os
 
 
 router = APIRouter()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/api/login', auto_error=False)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/api/auth/login', auto_error=False)
 pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 ACCESS_TOKEN_EXPIRATION = 3600
 
