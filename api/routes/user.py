@@ -34,8 +34,6 @@ class UserResponse(BaseModel):
     email: str 
     role: str 
     name: str
-    profile: str
-    authenticator_linked: bool
 
 @router.post('/user', tags=['User'])
 async def create_user(
