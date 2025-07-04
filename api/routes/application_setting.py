@@ -33,7 +33,7 @@ class ApplicationSettingResponse(BaseModel):
     modified_by_id: int
     
 
-@router.post('/application_setting', response_model=ApplicationSettingResponse, tags=['ApplicationSetting'])
+@router.post('/application_settings', response_model=ApplicationSettingResponse, tags=['ApplicationSetting'])
 def create_application_setting(
     data: ApplicationSettingCreate,
 	current_user: typing.Annotated[User, Depends(get_current_user)],   
@@ -87,7 +87,7 @@ def get_application_settings(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get('/application_setting/{name}', response_model=ApplicationSettingResponse, tags=['ApplicationSetting'])
+@router.get('/application_settings/{name}', response_model=ApplicationSettingResponse, tags=['ApplicationSetting'])
 def get_application_setting(
 	current_user: typing.Annotated[User, Depends(get_current_user)],  
     name: str, 
@@ -102,7 +102,7 @@ def get_application_setting(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.patch('/application_setting/{name}', response_model=ApplicationSettingResponse, tags=['ApplicationSetting'])
+@router.patch('/application_settings/{name}', response_model=ApplicationSettingResponse, tags=['ApplicationSetting'])
 def update_application_setting(
 	current_user: typing.Annotated[User, Depends(get_current_user)],  
     name: str, 
@@ -126,7 +126,7 @@ def update_application_setting(
     except Exception as e:
         raise HTTPException(status_code=error_code, detail=str(e))
 
-@router.delete('/application_setting/{name}', response_model=ActionResponse, tags=['ApplicationSetting'])
+@router.delete('/application_settings/{name}', response_model=ActionResponse, tags=['ApplicationSetting'])
 def delete_application_setting(
     name: str,
 	current_user: typing.Annotated[User, Depends(get_current_user)],  

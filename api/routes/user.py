@@ -35,7 +35,7 @@ class UserResponse(BaseModel):
     role: str 
     name: str
 
-@router.post('/user', tags=['User'])
+@router.post('/users', tags=['User'])
 async def create_user(
     data: UserCreate,
     current_user: Annotated[User, Depends(get_current_user)],
@@ -94,7 +94,7 @@ async def get_users(
     users = db.exec(query).all()
     return users
 
-@router.get('/user/{id}', response_model=UserResponse, tags=['User'])
+@router.get('/users/{id}', response_model=UserResponse, tags=['User'])
 async def get_user(
     id: str,
     current_user: Annotated[User, Depends(get_current_user)],
@@ -118,7 +118,7 @@ async def get_user(
     user = db.exec(select(User).where(User.id == int(id))).first()
     return user
 
-@router.patch("/user/verify/{id}", response_model=ActionResponse, tags=['User'])
+@router.patch("/users/verify/{id}", response_model=ActionResponse, tags=['User'])
 async def verify_user(
     id: int, 
     current_user: Annotated[User, Depends(get_current_user)],
@@ -152,7 +152,7 @@ async def verify_user(
         message='User verified successfully'
     )
 
-@router.patch('/user/role/{id}', tags=['User'])
+@router.patch('/users/role/{id}', tags=['User'])
 async def update_user_role(
     id: str,
     role: UserRole,
@@ -193,7 +193,7 @@ async def update_user_role(
         message='User role updated successfully'
     )
 
-@router.delete('/user/{id}', tags=['User'])
+@router.delete('/users/{id}', tags=['User'])
 async def delete_user(
     id: str,
     current_user: Annotated[User, Depends(get_current_user)],

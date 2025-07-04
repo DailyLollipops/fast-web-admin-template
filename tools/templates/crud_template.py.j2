@@ -67,7 +67,7 @@ class {{ model.__name__ }}Update(BaseModel):
         {%- endif %}
     {% endfor %}
 
-@router.post('/{{ model.__name__.lower() }}', response_model={{ model.__name__ }}Response, tags=['{{ model.__name__ }}'])
+@router.post('/{{ model.__name__.lower() }}s', response_model={{ model.__name__ }}Response, tags=['{{ model.__name__ }}'])
 def create_{{ model.__name__.lower() }}(
     data: {{ model.__name__ }}Create, 
     {%- if create_login_required %}{{ '\n\t' }}current_user: typing.Annotated[User, Depends(get_current_user)], {% endif %}  
@@ -142,7 +142,7 @@ def get_{{ model.__name__.lower() }}s(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get('/{{ model.__name__.lower() }}/{id}', response_model={{ model.__name__ }}Response, tags=['{{ model.__name__ }}'])
+@router.get('/{{ model.__name__.lower() }}s/{id}', response_model={{ model.__name__ }}Response, tags=['{{ model.__name__ }}'])
 def get_{{ model.__name__.lower() }}(
     {%- if read_login_required %}{{ '\n\t' }}current_user: typing.Annotated[User, Depends(get_current_user)], {% endif %} 
     id: int, 
@@ -157,7 +157,7 @@ def get_{{ model.__name__.lower() }}(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.patch('/{{ model.__name__.lower() }}/{id}', response_model={{ model.__name__ }}Response, tags=['{{ model.__name__ }}'])
+@router.patch('/{{ model.__name__.lower() }}s/{id}', response_model={{ model.__name__ }}Response, tags=['{{ model.__name__ }}'])
 def update_{{ model.__name__.lower() }}(
     id: int, 
     data: {{ model.__name__ }}Update, 
@@ -197,7 +197,7 @@ def update_{{ model.__name__.lower() }}(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.delete('/{{ model.__name__.lower() }}/{id}', response_model=ActionResponse, tags=['{{ model.__name__ }}'])
+@router.delete('/{{ model.__name__.lower() }}s/{id}', response_model=ActionResponse, tags=['{{ model.__name__ }}'])
 def delete_{{ model.__name__.lower() }}(
     id: int, 
     {%- if delete_login_required %}{{ '\n\t' }}current_user: typing.Annotated[User, Depends(get_current_user)], {% endif %} 

@@ -47,7 +47,7 @@ class TemplateUpdate(BaseModel):
     modified_by_id: int = None
     
 
-@router.post('/template', response_model=TemplateResponse, tags=['Template'])
+@router.post('/templates', response_model=TemplateResponse, tags=['Template'])
 def create_template(
     data: TemplateCreate,
 	current_user: typing.Annotated[User, Depends(get_current_user)],   
@@ -101,7 +101,7 @@ def get_templates(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get('/template/{id}', response_model=TemplateResponse, tags=['Template'])
+@router.get('/templates/{id}', response_model=TemplateResponse, tags=['Template'])
 def get_template(
 	current_user: typing.Annotated[User, Depends(get_current_user)],  
     id: int, 
@@ -116,7 +116,7 @@ def get_template(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.patch('/template/{id}', response_model=TemplateResponse, tags=['Template'])
+@router.patch('/templates/{id}', response_model=TemplateResponse, tags=['Template'])
 def update_template(
     id: int, 
     data: TemplateUpdate,
@@ -152,7 +152,7 @@ def update_template(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.delete('/template/{id}', response_model=ActionResponse, tags=['Template'])
+@router.delete('/templates/{id}', response_model=ActionResponse, tags=['Template'])
 def delete_template(
     id: int,
 	current_user: typing.Annotated[User, Depends(get_current_user)],  
