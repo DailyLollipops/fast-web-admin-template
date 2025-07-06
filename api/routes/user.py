@@ -1,10 +1,11 @@
 from fastapi import APIRouter, HTTPException, Depends, status
-from sqlmodel import Session, select, delete
+from sqlmodel import Session, select, delete, asc, desc
 from sqlalchemy import or_
 from enum import Enum
 from typing import Annotated, Optional, List
 from pydantic import BaseModel
 import bcrypt
+import json
 
 from models.user import User
 from models.notification import Notification
@@ -72,9 +73,12 @@ async def create_user(
 @router.get('/users', response_model=List[UserResponse], tags=['User'])
 async def get_users(
     current_user: Annotated[User, Depends(get_current_user)],
+    order_field: str = 'id', 
+    order_by: str = 'desc', 
+    limit: int = None, 
+    offset: int = None, 
+    filters: str = None, 
     db: Session = Depends(get_db),
-    role: Optional[UserRole] = None,
-    verified: Optional[bool] = None
 ):
     """
     Get all users with limited information.
@@ -86,13 +90,43 @@ async def get_users(
             detail='No access to resource',
             headers={'WWW-Authenticate': 'Bearer'},
         )
-    query = select(User)
-    if role:
-        query = query.where(User.role == role)
-    if verified is not None:
-        query = query.where(User.verified == verified)
-    users = db.exec(query).all()
-    return users
+
+    try:
+        query = select(User)
+        if filters:
+            filters_dict = {}
+            filter_exc = HTTPException(status_code=400, detail='Invalid filter parameter')
+            try:
+                filters_dict = json.loads(filters)
+                if not isinstance(filters_dict, dict):
+                    raise filter_exc
+            except Exception:
+                raise filter_exc
+            for key, value in filters_dict.items():
+                if key not in User.model_fields:
+                    continue
+                column = getattr(User, key)
+                query = query.where(column == value)
+        if order_field is not None:
+            if order_field not in User.model_fields:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f'{order_field} is not a valid field'
+                )
+            if order_by == 'asc':
+                query = query.order_by(asc(getattr(User, order_field)))
+            else:
+                query = query.order_by(desc(getattr(User, order_field)))
+        if limit is not None:
+            query = query.limit(limit)
+        if offset is not None:
+            query = query.offset(offset)
+        branchs = db.exec(query).all()
+        return branchs
+    except HTTPException as http_ex:
+        raise http_ex
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get('/users/{id}', response_model=UserResponse, tags=['User'])
 async def get_user(
