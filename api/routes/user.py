@@ -36,7 +36,7 @@ class UserResponse(BaseModel):
     role: str 
     name: str
 
-@router.post('/users', tags=['User'])
+@router.post('/users', response_model=UserResponse, tags=['User'])
 async def create_user(
     data: UserCreate,
     current_user: Annotated[User, Depends(get_current_user)],
@@ -61,14 +61,11 @@ async def create_user(
     
     data.password = bcrypt.hashpw(data.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
-    new_user = User(**data)
+    new_user = User(**data.model_dump())
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    return ActionResponse(
-        success=True,
-        message=f'User created successfully with ID of {new_user.id}'
-    )
+    return new_user
 
 @router.get('/users', response_model=List[UserResponse], tags=['User'])
 async def get_users(
@@ -152,7 +149,7 @@ async def get_user(
     user = db.exec(select(User).where(User.id == int(id))).first()
     return user
 
-@router.patch("/users/verify/{id}", response_model=ActionResponse, tags=['User'])
+@router.patch("/users/verify/{id}", response_model=UserResponse, tags=['User'])
 async def verify_user(
     id: int, 
     current_user: Annotated[User, Depends(get_current_user)],
@@ -181,12 +178,9 @@ async def verify_user(
         body=f'User ID {user.id} has been verified.'
     )
 
-    return ActionResponse(
-        success=True,
-        message='User verified successfully'
-    )
+    return user
 
-@router.patch('/users/role/{id}', tags=['User'])
+@router.patch('/users/role/{id}', response_model=UserResponse, tags=['User'])
 async def update_user_role(
     id: str,
     role: UserRole,
@@ -222,10 +216,7 @@ async def update_user_role(
     db.commit()
     db.refresh(user)
 
-    return ActionResponse(
-        success=True,
-        message='User role updated successfully'
-    )
+    return user
 
 @router.delete('/users/{id}', tags=['User'])
 async def delete_user(
