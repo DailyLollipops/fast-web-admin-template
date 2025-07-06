@@ -34,7 +34,7 @@ export const dataProvider: DataProvider = {
       query["limit"] = perPage.toString();
     }
     if (params.filter !== undefined) {
-      query["filter"] = JSON.stringify(params.filter);
+      query["filters"] = JSON.stringify(params.filter);
     }
 
     const url = `${API_URL}/${resource}?${stringify(query)}`;
@@ -83,7 +83,7 @@ export const dataProvider: DataProvider = {
       query["limit"] = perPage.toString();
     }
     if (params.filter !== undefined) {
-      query["filter"] = JSON.stringify(params.filter);
+      query["filters"] = JSON.stringify(params.filter);
     }
 
     const url = `${API_URL}/${resource}?${stringify(query)}`;
