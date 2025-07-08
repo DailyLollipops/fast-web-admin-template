@@ -125,6 +125,7 @@ def generate_model_route(
     module = importlib.import_module(f'api.models.{module_name}')
     model_name = ''.join(word.capitalize() for word in model.split('_'))
     model: SQLModel = getattr(module, model_name)
+    route_name = TextBlob(module_name).words[0].pluralize()
 
     with open('tools/templates/crud_template.py.j2', 'r') as f:
         template_content = f.read()
@@ -135,8 +136,6 @@ def generate_model_route(
     env = Environment()
     env.filters["getattr"] = getattr_filter
     template = env.from_string(template_content)
-    blob = TextBlob(model.__name__)
-    route_name = blob.words[0].pluralize()
     output = template.render(
         module=module_name,
         model=model,
