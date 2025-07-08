@@ -1,4 +1,3 @@
-from dotenv import load_dotenv
 from jinja2 import Environment, Template
 from sqlmodel import SQLModel
 from textblob import TextBlob
@@ -77,13 +76,11 @@ def bootstrap(app_name: str, domain: str):
 @click.command()
 @click.argument('message')
 def create_migration(message: str):
-    load_dotenv()
-    app_name = os.getenv('APP_NAME')
     result = subprocess.run([
         'docker',
         'compose',
         'exec',
-        f'{app_name}-api',
+        'api',
         'alembic',
         'revision',
         '--autogenerate',
@@ -95,13 +92,11 @@ def create_migration(message: str):
 
 @click.command()
 def run_migration():
-    load_dotenv()
-    app_name = os.getenv('APP_NAME')
     result = subprocess.run([
         'docker',
         'compose',
         'exec',
-        f'{app_name}-api',
+        'api',
         'alembic',
         'upgrade',
         'head',
