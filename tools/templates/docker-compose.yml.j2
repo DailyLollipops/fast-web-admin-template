@@ -1,9 +1,8 @@
 name: "{{ app_name }}"
 
 services:
-  {{ app_name }}-mysql:
+  mysql:
     image: mysql:8.0
-    container_name: {{ app_name }}-mysql
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
@@ -16,19 +15,17 @@ services:
     networks:
       - app_network
 
-  {{ app_name }}-redis:
+  redis:
     image: redis:latest
-    container_name: {{ app_name }}-redis
     ports:
       - 6379:6379
     networks:
       - app_network
 
-  {{ app_name }}-api:
+  api:
     build:
       context: ./api
       dockerfile: Dockerfile
-    container_name: {{ app_name }}-api
     ports:
       - 8000:8000
     volumes:
@@ -36,8 +33,8 @@ services:
     command: 
       - /app/api_init.sh
     depends_on:
-      - {{ app_name }}-mysql
-      - {{ app_name }}-redis
+      - mysql
+      - redis
     networks:
       - app_network
     environment:
@@ -55,14 +52,13 @@ services:
       - APP_ENV=${APP_ENV}
       - SECRET_KEY=${SECRET_KEY}
 
-  {{ app_name }}-web:
+  web:
     build:
       context: ./web
       dockerfile: Dockerfile
       args:
         APP_ENV: ${APP_ENV}
         REACT_APP_API_BASE_URL: ${REACT_APP_API_BASE_URL}
-    container_name: {{ app_name }}-web
     ports:
       - 3000:3000
     volumes:
@@ -73,7 +69,7 @@ services:
       - /bin/sh
       - /app/web_init.sh
     depends_on:
-      - {{ app_name }}-api
+      - api
     networks:
       - app_network
     environment:
@@ -81,9 +77,8 @@ services:
       - VITE_BASE_API_URL=${VITE_BASE_API_URL}
       - VITE_APP_NAME=${VITE_APP_NAME}
 
-  {{ app_name }}-caddy:
+  caddy:
     image: caddy:latest
-    container_name: {{ app_name }}-caddy
     ports:
       - 80:80
       - 443:443
@@ -92,8 +87,8 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
-      - {{ app_name }}-web
-      - {{ app_name }}-api
+      - web
+      - api
     networks:
       - app_network
 
