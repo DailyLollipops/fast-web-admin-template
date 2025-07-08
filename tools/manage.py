@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 from jinja2 import Environment, Template
 from sqlmodel import SQLModel
+from textblob import TextBlob
 import click
 import importlib
 import os
@@ -139,9 +140,12 @@ def generate_model_route(
     env = Environment()
     env.filters["getattr"] = getattr_filter
     template = env.from_string(template_content)
+    blob = TextBlob(model.__name__)
+    route_name = blob.words[0].pluralize()
     output = template.render(
         module=module_name,
         model=model,
+        route_name=route_name,
         create_login_required=create_login_required,
         read_login_required=read_login_required,
         update_login_required=update_login_required,
