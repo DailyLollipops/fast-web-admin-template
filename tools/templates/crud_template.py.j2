@@ -50,7 +50,7 @@ class {{ model.__name__ }}Response(BaseModel):
             {{ field }}: {{ annotation -}}
         {% endif -%}
         {%- if not model_field.is_required() -%}
-            {{ '' }} = None
+            {{ '' }} | None = None
         {%- endif %}
     {% endfor %}
 
