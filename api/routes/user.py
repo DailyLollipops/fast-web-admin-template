@@ -35,6 +35,7 @@ class UserResponse(BaseModel):
     email: str 
     role: str 
     name: str
+    branch_id: str | None
 
 @router.post('/users', response_model=UserResponse, tags=['User'])
 async def create_user(
