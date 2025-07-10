@@ -264,3 +264,10 @@ async def delete_user(
         success=True,
         message='User deleted successfully'
     )
+
+@router.get('/me', response_model=UserResponse, tags=['User'])
+async def me(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Session = Depends(get_db),
+):
+    return current_user
