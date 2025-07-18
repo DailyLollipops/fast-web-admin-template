@@ -46,17 +46,20 @@ def create_caddy_file(app_name: str, domain: str, outfile: str):
 def cli():
     pass
 
+
 @click.command()
 @click.argument('app_name')
 @click.option('--outfile', '-n', default='.env', help='Output file location')
 def generate_env(app_name: str, outfile: str):
     create_env_file(app_name, outfile)
 
+
 @click.command()
 @click.argument('app_name')
 @click.option('--outfile', '-n', default='docker-compose.yml', help='Output file location')
 def generate_compose_file(app_name: str, outfile: str):
     create_compose_file(app_name, outfile)
+
 
 @click.command()
 @click.argument('app_name')
@@ -65,6 +68,7 @@ def generate_compose_file(app_name: str, outfile: str):
 def generate_caddy_config(app_name: str, domain: str, outfile: str):
     create_caddy_file(app_name, domain, outfile)
 
+
 @click.command()
 @click.argument('app_name')
 @click.option('-d', '--domain', default=':80', help='Domain, localhost default')
@@ -72,6 +76,7 @@ def bootstrap(app_name: str, domain: str):
     create_env_file(app_name, '.env')
     create_compose_file(app_name, 'docker-compose.yml')
     create_caddy_file(app_name, domain, 'Caddyfile.conf')
+
 
 @click.command()
 @click.argument('message')
@@ -90,6 +95,7 @@ def create_migration(message: str):
     print(result.stdout)
     print(result.stderr)
 
+
 @click.command()
 def run_migration():
     result = subprocess.run([
@@ -103,6 +109,7 @@ def run_migration():
     ], capture_output=True, text=True)
     print(result.stdout)
     print(result.stderr)
+
 
 @click.command()
 @click.argument('model')
@@ -149,6 +156,62 @@ def generate_model_route(
     with open(f"api/routes/{module_name}.py", "w") as file:
         file.write(output)
 
+
+@click.command()
+@click.argument('model')
+def generate_model_factory(
+    model: str, 
+):
+    with open('tools/templates/factory.py.j2', 'r') as f:
+        template_content = f.read()
+
+    def getattr_filter(obj, attr, default=None):
+        return getattr(obj, attr, default)
+    
+    module_name = model.lower()
+    module = importlib.import_module(f'api.models.{module_name}')
+    model_name = ''.join(word.capitalize() for word in model.split('_'))
+    model: SQLModel = getattr(module, model_name)
+    env = Environment()
+    env.filters["getattr"] = getattr_filter
+    template = env.from_string(template_content)
+    output = template.render(model=model, module=module_name)
+    with open(f"api/factory/{module_name}.py", "w") as file:
+        file.write(output)
+
+
+@click.command()
+@click.argument('from_generator')
+@click.option('-n', '--num', default=None, help='Seed n number of models')
+@click.option('--no-override', is_flag=True, default=True, help='Dont save if table has data')
+@click.option('--only', multiple=True, help='Only seed specific models')
+def seed(from_generator, num, no_override, only):
+    """
+    Seed database
+
+    :param from_generator: data seed generator (can be `random` or `list`)
+    """
+    cmd = [
+        'docker',
+        'compose',
+        'exec',
+        'api',
+        'python',
+        'seeder.py',
+        f'seed-{from_generator}',
+    ]
+    if num:
+        cmd.extend(['-n', num])
+    if not no_override:
+        cmd.append('--no-override')
+    if only:
+        for o in only:
+            cmd.extend(['--only', o])
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    print(result.stdout)
+    print(result.stderr)
+
+
 cli.add_command(generate_env)
 cli.add_command(generate_compose_file)
 cli.add_command(generate_caddy_config)
@@ -156,6 +219,8 @@ cli.add_command(bootstrap)
 cli.add_command(create_migration)
 cli.add_command(run_migration)
 cli.add_command(generate_model_route)
+cli.add_command(generate_model_factory)
+cli.add_command(seed)
 
 if __name__ == '__main__':
     cli()
