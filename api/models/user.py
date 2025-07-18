@@ -24,6 +24,11 @@ class User(SQLModel, table=True):
         sa_relationship_kwargs={"primaryjoin": "Branch.id == User.branch_id"}
     )
 
+    audits: List['Audit'] = Relationship( # type: ignore
+        back_populates='user', 
+        sa_relationship_kwargs={'cascade':'all, delete-orphan'}
+    ) 
+
     notifications: List['Notification'] = Relationship( # type: ignore
         back_populates='user', 
         sa_relationship_kwargs={'cascade':'all, delete-orphan'}

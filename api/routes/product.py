@@ -11,6 +11,7 @@ from database import get_db
 from models.user import User
 from models.product import Product
 from .auth import get_current_user
+from utils import uploadutil
 
 router = APIRouter()
 
@@ -22,6 +23,8 @@ class ActionResponse(BaseModel):
 
 class ProductCreate(BaseModel):
     name: str
+    description: str
+    image: str
     created_at: datetime = None
     updated_at: datetime = None
     
@@ -29,12 +32,16 @@ class ProductCreate(BaseModel):
 class ProductResponse(BaseModel):
     id: int | None = None
     name: str
+    description: str = None
+    image: str = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
     
 
 class ProductUpdate(BaseModel):
     name: str = None
+    description: str = None
+    image: str = None
     created_at: datetime = None
     updated_at: datetime = None
     
@@ -51,8 +58,11 @@ def create_product(
                 status_code=400,
                 detail=f'Product with name of {data.name} already exists'
             )
-            
-        product = Product(**data.model_dump())
+        
+        path = uploadutil.save_base64_image(data.image, data.name, 'static/uploads')
+        converted_data = data.model_dump()
+        converted_data['image'] = path
+        product = Product(**converted_data)
         db.add(product)
         db.commit()
         return product
@@ -145,7 +155,9 @@ def update_product(
                 detail=f'Product with name of {data.name} already exists'
             )
             
+        path = uploadutil.save_base64_image(data.image, data.name, 'static/uploads')
         data_dict = data.model_dump()
+        data_dict['image'] = path
         for field in data_dict:
             if hasattr(product, field) and data_dict[field]:
                 setattr(product, field, data_dict[field])

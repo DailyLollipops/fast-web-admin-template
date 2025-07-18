@@ -1,4 +1,4 @@
-import * as React from "react";
+import React from "react";
 import {
   AppBar as RaAppBar,
   Logout,
@@ -6,7 +6,14 @@ import {
   useUserMenu,
   TitlePortal,
 } from "react-admin";
-import { Box, ListItemIcon, ListItemText, MenuItem } from "@mui/material";
+import {
+  Box,
+  ListItemIcon,
+  ListItemText,
+  MenuItem,
+  useMediaQuery,
+  useTheme,
+} from "@mui/material";
 import SettingsIcon from "@mui/icons-material/Settings";
 import { Link } from "react-router-dom";
 import Logo from "../assets/Logo.png";
@@ -41,10 +48,19 @@ const AppBarUserMenu = () => (
   </UserMenu>
 );
 
-export const AppBar = () => (
-  <RaAppBar userMenu={<AppBarUserMenu />}>
-    <Box component="img" src={Logo} alt="Logo" sx={{ height: 32 }} />
-    <Box sx={{ width: 32 }} />
-    <TitlePortal sx={{ textAlign: "center" }} />
-  </RaAppBar>
-);
+export const AppBar = () => {
+  const theme = useTheme();
+  const isSm = useMediaQuery(theme.breakpoints.down("sm"));
+
+  return (
+    <RaAppBar userMenu={<AppBarUserMenu />}>
+      {!isSm && (
+        <>
+          <Box component="img" src={Logo} alt="Logo" sx={{ height: 32 }} />
+          <Box sx={{ width: 32 }} />
+        </>
+      )}
+      <TitlePortal sx={{ textAlign: "center" }} />
+    </RaAppBar>
+  );
+};

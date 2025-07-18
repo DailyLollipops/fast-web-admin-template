@@ -1,0 +1,144 @@
+from .base import BaseFactory
+from models.machine_product_link import MachineProductLink
+
+class MachineProductLinkFactory(BaseFactory):
+    def __init__(self):
+        super().__init__(MachineProductLink)
+
+    # You can also implement your own random list_generator
+    # def random_generator(self) -> dict:
+    #     pass
+
+    def list_generator(self):
+        """
+        Override to add custom dataset
+        """
+        return [{
+            'id': 1,
+            'machine_id': 1,
+            'product_id': 2,
+        }, {
+            'id': 2,
+            'machine_id': 1,
+            'product_id': 3,
+        }, {
+            'id': 3,
+            'machine_id': 2,
+            'product_id': 1,
+        }, {
+            'id': 4,
+            'machine_id': 2,
+            'product_id': 2,
+        }, {
+            'id': 5,
+            'machine_id': 3,
+            'product_id': 1,
+        }, {
+            'id': 6,
+            'machine_id': 3,
+            'product_id': 2,
+        }, {
+            'id': 7,
+            'machine_id': 4,
+            'product_id': 1,
+        }, {
+            'id': 8,
+            'machine_id': 4,
+            'product_id': 2,
+        }, {
+            'id': 9,
+            'machine_id': 5,
+            'product_id': 1,
+        }, {
+            'id': 10,
+            'machine_id': 5,
+            'product_id': 2,
+        }, {
+            'id': 11,
+            'machine_id': 6,
+            'product_id': 1,
+        }, {
+            'id': 12,
+            'machine_id': 6,
+            'product_id': 2,
+        }, {
+            'id': 13,
+            'machine_id': 6,
+            'product_id': 3,
+        }, {
+            'id': 14,
+            'machine_id': 7,
+            'product_id': 1,
+        }, {
+            'id': 15,
+            'machine_id': 7,
+            'product_id': 2,
+        }, {
+            'id': 16,
+            'machine_id': 7,
+            'product_id': 3,
+        }, {
+            'id': 17,
+            'machine_id': 8,
+            'product_id': 1,
+        }, {
+            'id': 18,
+            'machine_id': 8,
+            'product_id': 2,
+        }, {
+            'id': 19,
+            'machine_id': 8,
+            'product_id': 3,
+        }, {
+            'id': 20,
+            'machine_id': 9,
+            'product_id': 1,
+        }, {
+            'id': 21,
+            'machine_id': 9,
+            'product_id': 2,
+        }, {
+            'id': 22,
+            'machine_id': 9,
+            'product_id': 3,
+        }, {
+            'id': 23,
+            'machine_id': 10,
+            'product_id': 1,
+        }, {
+            'id': 24,
+            'machine_id': 10,
+            'product_id': 2,
+        }, {
+            'id': 25,
+            'machine_id': 11,
+            'product_id': 1,
+        }, {
+            'id': 26,
+            'machine_id': 11,
+            'product_id': 2,
+        }, {
+            'id': 27,
+            'machine_id': 12,
+            'product_id': 1,
+        }, {
+            'id': 28,
+            'machine_id': 12,
+            'product_id': 2,
+        }, {
+            'id': 29,
+            'machine_id': 13,
+            'product_id': 2,
+        }, {
+            'id': 30,
+            'machine_id': 13,
+            'product_id': 3,
+        }, {
+            'id': 31,
+            'machine_id': 14,
+            'product_id': 1,
+        }, {
+            'id': 32,
+            'machine_id': 14,
+            'product_id': 2,
+        }]

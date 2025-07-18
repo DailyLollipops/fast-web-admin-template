@@ -7,6 +7,8 @@ class Product(SQLModel, table=True):
     __tablename__ = 'products'
     id: int = Field(default=None, primary_key=True)
     name: str = Field(unique=True)
+    description: str = Field(...)
+    image: str = Field(...)
 
     created_at: datetime = Field(default_factory=lambda: datetime.now())
     updated_at: datetime = Field(
@@ -15,6 +17,6 @@ class Product(SQLModel, table=True):
     )
 
     machines: List['Machine'] = Relationship( # type: ignore
-        back_populates="products",
+        back_populates='products',
         link_model=MachineProductLink
     )

@@ -11,6 +11,7 @@ const choices = [
   { id: "pump_attendant", name: "Pump Attendant" },
   { id: "admin_sales", name: "Admin Sales" },
   { id: "admin_inventory", name: "Admin Inventory" },
+  { id: "admin", name: "Super Admin" },
   { id: "owner", name: "Owner" },
 ];
 

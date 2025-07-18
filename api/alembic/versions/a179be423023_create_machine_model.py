@@ -31,11 +31,13 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('machine_product_link',
+    sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('machine_id', sa.Integer(), nullable=False),
     sa.Column('product_id', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['machine_id'], ['machines.id'], ),
     sa.ForeignKeyConstraint(['product_id'], ['products.id'], ),
-    sa.PrimaryKeyConstraint('machine_id', 'product_id')
+    sa.UniqueConstraint('machine_id', 'product_id', name='uq_machine_product_link_machine_id_product_id'),
+    sa.PrimaryKeyConstraint('id'),
     )
     # ### end Alembic commands ###
 

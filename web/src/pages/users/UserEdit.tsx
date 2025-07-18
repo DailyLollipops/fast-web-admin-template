@@ -3,7 +3,7 @@ import { Edit, ReferenceInput, SimpleForm, TextInput } from "react-admin";
 export const UserEdit = () => (
   <Edit>
     <SimpleForm>
-      <TextInput source="id" />
+      <TextInput source="id" readOnly />
       <TextInput source="email" />
       <TextInput source="role" />
       <TextInput source="name" />
