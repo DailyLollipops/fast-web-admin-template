@@ -37,6 +37,7 @@ export const authProvider: AuthProvider = {
 
     const authDetails = await identityResponse.text();
     localStorage.setItem(AUTH_DETAILS, authDetails);
+    window.location.reload();
 
     return Promise.resolve();
   },
@@ -61,9 +62,9 @@ export const authProvider: AuthProvider = {
     return Promise.resolve();
   },
 
-  authProvider: async () => {
+  getIdentity: async () => {
     const authCredentials = JSON.parse(localStorage.getItem(AUTH_DETAILS)!);
-    const { id, fullName, avatar } = authCredentials;
-    return { id, fullName, avatar };
+    const { id, email, role, name, branch_id } = authCredentials;
+    return { id, email, role, name, branch_id };
   },
 };

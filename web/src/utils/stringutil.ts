@@ -33,3 +33,29 @@ export function stringToMuiColor(input: string): MuiColor {
   const index = Math.abs(hash) % colorPalette.length;
   return colorPalette[index];
 }
+
+export function toCurrencyString(value: string): string {
+  if (isNaN(+value)) {
+    return "₱0.00";
+  }
+
+  return (+value).toLocaleString("en-US", {
+    style: "currency",
+    currency: "PHP",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+export const formatCurrencyShort = (value: number) => {
+  if (value >= 1_000_000) return `₱${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `₱${(value / 1_000).toFixed(1)}K`;
+  return `₱${value.toFixed(0)}`;
+};
+
+export function snakeToCapitalizedWords(snake: string): string {
+  return snake
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}

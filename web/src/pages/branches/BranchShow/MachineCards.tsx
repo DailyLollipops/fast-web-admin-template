@@ -1,6 +1,6 @@
 import { useListContext } from "react-admin";
 import { Grid } from "@mui/material";
-import { MachineCard } from "./MachineCard";
+import { MachineCard } from "../../../components";
 
 export const MachineCards = () => {
   const { data, isLoading } = useListContext();
@@ -11,7 +11,7 @@ export const MachineCards = () => {
     <Grid container spacing={2} sx={{ mt: 1 }}>
       {data.map((machine) => (
         <Grid size={{ xs: 12, sm: 6, md: 6, lg: 4 }} key={machine.id}>
-          <MachineCard machine={machine} />
+          <MachineCard machine={machine} actions={true} />
         </Grid>
       ))}
     </Grid>

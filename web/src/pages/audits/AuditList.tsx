@@ -46,6 +46,7 @@ export const AuditList = () => (
       </DataTable.Col>
       <DataTable.NumberCol source="remaining" />
       <DataTable.Col source="dispensed" />
+      <DataTable.Col source="expenses" />
       <DataTable.Col source="price" />
       <DataTable.Col source="sales" />
       <DataTable.NumberCol source="refill_amount" />

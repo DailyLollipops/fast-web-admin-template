@@ -5,18 +5,44 @@ import {
   UserMenu,
   useUserMenu,
   TitlePortal,
+  useGetIdentity,
 } from "react-admin";
 import {
   Box,
   ListItemIcon,
   ListItemText,
   MenuItem,
+  Typography,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
 import SettingsIcon from "@mui/icons-material/Settings";
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import { Link } from "react-router-dom";
 import Logo from "../assets/Logo.png";
+import { snakeToCapitalizedWords } from "../utils";
+
+const UserInfoMenuItem = () => {
+  const { data: identity, isLoading } = useGetIdentity();
+
+  if (isLoading || !identity) return null;
+
+  return (
+    <MenuItem disabled>
+      <ListItemIcon>
+        <AccountCircleIcon fontSize="small" />
+      </ListItemIcon>
+      <ListItemText
+        primary={identity.name}
+        secondary={
+          <Typography variant="caption" color="text.secondary">
+            {snakeToCapitalizedWords(identity.role)}
+          </Typography>
+        }
+      />
+    </MenuItem>
+  );
+};
 
 // eslint-disable-next-line react/display-name
 const SettingsMenuItem = React.forwardRef<HTMLAnchorElement>((props, ref) => {
@@ -43,6 +69,7 @@ const SettingsMenuItem = React.forwardRef<HTMLAnchorElement>((props, ref) => {
 
 const AppBarUserMenu = () => (
   <UserMenu>
+    <UserInfoMenuItem />
     <SettingsMenuItem />
     <Logout />
   </UserMenu>

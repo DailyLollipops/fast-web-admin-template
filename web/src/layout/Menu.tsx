@@ -1,14 +1,14 @@
 import { Menu as RaMenu } from "react-admin";
-import LabelIcon from "@mui/icons-material/Label";
+import LanguageIcon from "@mui/icons-material/Language";
 
 export const Menu = () => (
   <RaMenu>
     <RaMenu.DashboardItem />
     <RaMenu.ResourceItems />
     <RaMenu.Item
-      to="/custom-route"
-      primaryText="Miscellaneous"
-      leftIcon={<LabelIcon />}
+      to="/about"
+      primaryText="About App"
+      leftIcon={<LanguageIcon />}
     />
   </RaMenu>
 );

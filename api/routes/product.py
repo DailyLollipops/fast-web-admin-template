@@ -1,7 +1,7 @@
 # Generated code for Product model
 
 from datetime import datetime
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, status
 from pydantic import BaseModel
 from sqlmodel import Session, select, asc, desc
 import typing
@@ -11,6 +11,7 @@ from database import get_db
 from models.user import User
 from models.product import Product
 from .auth import get_current_user
+from .user import UserRole
 from utils import uploadutil
 
 router = APIRouter()
@@ -46,12 +47,26 @@ class ProductUpdate(BaseModel):
     updated_at: datetime = None
     
 
+permissions = {
+    'create': [UserRole.admin, UserRole.owner, UserRole.admin_inventory],
+    'read': [UserRole.admin, UserRole.owner, UserRole.admin_inventory],
+    'update': [UserRole.admin, UserRole.owner, UserRole.admin_inventory],
+    'delete': [UserRole.admin, UserRole.owner, UserRole.admin_inventory],
+}
+
 @router.post('/products', response_model=ProductResponse, tags=['Product'])
 def create_product(
     data: ProductCreate,
 	current_user: typing.Annotated[User, Depends(get_current_user)],   
     db: Session = Depends(get_db)
 ):
+    if current_user.role not in permissions['create']:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='No access to resource',
+            headers={'WWW-Authenticate': 'Bearer'},
+        )
+
     try:
         if db.exec(select(Product).where(Product.name == data.name)).first():
             raise HTTPException(
@@ -140,6 +155,13 @@ def update_product(
 	current_user: typing.Annotated[User, Depends(get_current_user)],  
     db: Session = Depends(get_db)
 ):
+    if current_user.role not in permissions['update']:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='No access to resource',
+            headers={'WWW-Authenticate': 'Bearer'},
+        )
+
     try:
         query = select(Product).where(Product.id == id)
         product = db.exec(query).first()
@@ -177,6 +199,13 @@ def delete_product(
 	current_user: typing.Annotated[User, Depends(get_current_user)],  
     db: Session = Depends(get_db)
 ):
+    if current_user.role not in permissions['delete']:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='No access to resource',
+            headers={'WWW-Authenticate': 'Bearer'},
+        )
+
     try:
         query = select(Product).where(Product.id == id)
         product = db.exec(query).first()

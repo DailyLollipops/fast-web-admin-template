@@ -1,7 +1,7 @@
 # Generated code for Machine model
 
 from datetime import datetime
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, status
 from pydantic import BaseModel
 from sqlmodel import Session, select, asc, desc, func
 from sqlalchemy.orm import aliased
@@ -15,6 +15,7 @@ from models.product import Product
 from models.machine_product_link import MachineProductLink
 from models.audit import Audit
 from .auth import get_current_user
+from .user import UserRole
 
 router = APIRouter()
 
@@ -71,9 +72,9 @@ class MachineProductResponse(BaseModel):
 
 
 class MachineSaleCreate(BaseModel):
-    remaining: float
     dispensed: float
     price: float
+    expenses: float
     created_at: datetime = None
     updated_at: datetime = None
 
@@ -89,6 +90,7 @@ class MachineAuditResponse(BaseModel):
     user_id: int
     remaining: float | None = None
     dispensed: float | None = None
+    expenses: float | None = None
     price: float | None = None
     sales: float | None = None
     refill_amount: float | None = None
@@ -97,12 +99,27 @@ class MachineAuditResponse(BaseModel):
     updated_at: datetime | None = None
 
 
+permissions = {
+    'create': [UserRole.admin, UserRole.owner, UserRole.admin_inventory],
+    'read': [UserRole.admin, UserRole.owner, UserRole.admin_inventory],
+    'update': [UserRole.admin, UserRole.owner, UserRole.admin_inventory],
+    'delete': [UserRole.admin, UserRole.owner, UserRole.admin_inventory],
+    'sales': [UserRole.pump_attendant]
+}
+
 @router.post('/machines', response_model=MachineResponse, tags=['Machine'])
 def create_machine(
     data: MachineCreate,
 	current_user: typing.Annotated[User, Depends(get_current_user)],   
     db: Session = Depends(get_db)
 ):
+    if current_user.role not in permissions['create']:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='No access to resource',
+            headers={'WWW-Authenticate': 'Bearer'},
+        )
+
     try:
         machine = Machine(**data.model_dump())
         db.add(machine)
@@ -182,6 +199,13 @@ def update_machine(
 	current_user: typing.Annotated[User, Depends(get_current_user)],  
     db: Session = Depends(get_db)
 ):
+    if current_user.role not in permissions['update']:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='No access to resource',
+            headers={'WWW-Authenticate': 'Bearer'},
+        )
+
     try:
         query = select(Machine).where(Machine.id == id)
         machine = db.exec(query).first()
@@ -211,6 +235,13 @@ def delete_machine(
 	current_user: typing.Annotated[User, Depends(get_current_user)],  
     db: Session = Depends(get_db)
 ):
+    if current_user.role not in permissions['delete']:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='No access to resource',
+            headers={'WWW-Authenticate': 'Bearer'},
+        )
+
     try:
         query = select(Machine).where(Machine.id == id)
         machine = db.exec(query).first()
@@ -234,6 +265,13 @@ def create_machine_product(
     data: MachineProductCreate,
     db: Session = Depends(get_db)
 ):
+    if current_user.role not in permissions['create']:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='No access to resource',
+            headers={'WWW-Authenticate': 'Bearer'},
+        )
+
     try:
         machine = db.get(Machine, id)
         if not machine:
@@ -390,6 +428,13 @@ def delete_machine_product(
 	current_user: typing.Annotated[User, Depends(get_current_user)],  
     db: Session = Depends(get_db)
 ):
+    if current_user.role not in permissions['delete']:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='No access to resource',
+            headers={'WWW-Authenticate': 'Bearer'},
+        )
+
     try:
         query = (
             select(MachineProductLink)
@@ -418,6 +463,13 @@ def refill_machine_product(
     data: MachineRefillCreate,
     db: Session = Depends(get_db)
 ):
+    if current_user.role not in permissions['create']:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='No access to resource',
+            headers={'WWW-Authenticate': 'Bearer'},
+        )
+
     try:
         machine = db.get(Machine, id)
         if not machine:
@@ -459,7 +511,7 @@ def refill_machine_product(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post('/machines/{id}/products/{product_id}/sale', response_model=MachineAuditResponse, tags=['Machine'])
+@router.post('/machines/{id}/products/{product_id}/sales', response_model=MachineAuditResponse, tags=['Machine'])
 def add_machine_product_sale(
 	current_user: typing.Annotated[User, Depends(get_current_user)],  
     id: int, 
@@ -467,6 +519,13 @@ def add_machine_product_sale(
     data: MachineSaleCreate,
     db: Session = Depends(get_db)
 ):
+    if current_user.role not in permissions['sales']:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='No access to resource',
+            headers={'WWW-Authenticate': 'Bearer'},
+        )
+
     try:
         machine = db.get(Machine, id)
         if not machine:
@@ -484,77 +543,30 @@ def add_machine_product_sale(
         if not mp_link:
             raise HTTPException(status_code=404, detail='MachineProductLink not found')
 
+        remaining = 0
+        query = (
+            select(Audit)
+            .where(Audit.machine_product_link_id == mp_link.id)
+            .order_by(desc(Audit.created_at))
+        )
+        latest_audit = db.exec(query).first()
+        if latest_audit:
+            remaining = latest_audit.remaining
+
         audit = Audit(
             user_id=current_user.id,
             machine_product_link_id=mp_link.id,
-            remaining=data.remaining,
+            remaining=remaining - data.dispensed,
             dispensed=data.dispensed,
             price=data.price,
             sales=data.dispensed * data.price,
+            expenses=data.expenses,
             category='sales'
         )
         db.add(audit)
         db.commit()
         db.refresh(audit)
         return audit
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.get('/machines/{id}/products/{product_id}/audits', response_model=typing.List[MachineAuditResponse], tags=['Machine'])
-def get_machine_products(
-	current_user: typing.Annotated[User, Depends(get_current_user)],
-    id: int,
-    product_id: int,
-    order_field: str = 'id', 
-    order_by: str = 'desc', 
-    limit: int = None, 
-    offset: int = None, 
-    filters: str = None, 
-    db: Session = Depends(get_db)
-):
-    try:
-        query = (
-            select(MachineProductLink)
-            .where(MachineProductLink.machine_id == id)
-            .where(MachineProductLink.product_id == product_id)
-        )
-        mp_link = db.exec(query).first()
-        if not mp_link:
-            raise HTTPException(status_code=404, detail='MachineProductLink not found')
-
-        query = (
-            select(Audit)
-            .where(Audit.machine_product_link_id == mp_link.id)
-        )
-
-        if filters:
-            try:
-                filters_dict = json.loads(filters)
-                if not isinstance(filters_dict, dict):
-                    raise HTTPException(status_code=400, detail='Invalid filter format')
-            except Exception:
-                raise HTTPException(status_code=400, detail='Invalid filter parameter')
-            
-            for key, value in filters_dict.items():
-                if key not in Audit.model_fields:
-                    continue
-                column = getattr(Audit, key)
-                query = query.where(column == value)
-
-        if order_field not in Audit.model_fields:
-            raise HTTPException(status_code=400, detail=f'{order_field} is not a valid field')
-        order_column = getattr(Audit, order_field)
-        query = query.order_by(order_column.asc() if order_by == 'asc' else order_column.desc())
-
-        if limit is not None:
-            query = query.limit(limit)
-        if offset is not None:
-            query = query.offset(offset)
-
-        audits = db.exec(query).all()
-        return audits
-    except HTTPException as http_ex:
-        raise http_ex
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

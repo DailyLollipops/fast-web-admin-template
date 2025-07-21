@@ -9,6 +9,7 @@ class Audit(SQLModel, table=True):
     machine_product_link_id: int = Field(foreign_key='machine_product_link.id')
     remaining: float = Field(nullable=True)
     dispensed: float = Field(nullable=True)
+    expenses: float = Field(nullable=True)
     price: float = Field(nullable=True)
     sales: float = Field(nullable=True)
     refill_amount: float = Field(nullable=True)

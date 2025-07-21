@@ -14,6 +14,7 @@ from models.audit import Audit
 from models.machine import Machine
 from models.machine_product_link import MachineProductLink
 from .auth import get_current_user
+from .user import UserRole
 
 router = APIRouter()
 
@@ -31,6 +32,7 @@ class AuditResponse(BaseModel):
     product_id: int
     remaining: float | None = None
     dispensed: float | None = None
+    expenses: float | None = None
     price: float | None = None
     sales: float | None = None
     refill_amount: float | None = None
@@ -84,6 +86,9 @@ def get_audits(
                 elif key == "branch_id":
                     query = query.where(machine_alias.branch_id == value)
 
+        if current_user.role == UserRole.pump_attendant:
+            query = query.where(Audit.user_id == current_user.id)
+
         if order_field:
             sort_col = None
             if order_field in Audit.model_fields:
@@ -129,6 +134,10 @@ def get_audit(
 ):
     try:
         query = select(Audit).where(Audit.id == id)
+
+        if current_user == UserRole.pump_attendant:
+            query = query.where(Audit.user_id == current_user.id)
+
         audit = db.exec(query).first()
         if not audit:
             raise HTTPException(status_code=404, detail='Audit not found')

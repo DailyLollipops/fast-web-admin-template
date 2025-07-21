@@ -18,6 +18,10 @@ router = APIRouter()
 class UserRole(str, Enum):
     admin = 'admin'
     user = 'user'
+    owner = 'owner'
+    admin_inventory = 'admin_inventory'
+    admin_sales = 'admin_sales'
+    pump_attendant = 'pump_attendant'
 
 class ActionResponse(BaseModel):
     success: bool
@@ -35,7 +39,7 @@ class UserResponse(BaseModel):
     email: str 
     role: str 
     name: str
-    branch_id: str | None
+    branch_id: int | None = None
 
 @router.post('/users', response_model=UserResponse, tags=['User'])
 async def create_user(
@@ -82,7 +86,7 @@ async def get_users(
     Get all users with limited information.
     Requires `admin` role
     """
-    if current_user.role != UserRole.admin:
+    if current_user.role not in list(UserRole):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail='No access to resource',
@@ -91,6 +95,9 @@ async def get_users(
 
     try:
         query = select(User)
+        if current_user.role == UserRole.pump_attendant:
+            query = query.where(User.id == current_user.id)
+
         if filters:
             filters_dict = {}
             filter_exc = HTTPException(status_code=400, detail='Invalid filter parameter')
@@ -141,13 +148,18 @@ async def get_user(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='Id must be numeric',
         )
-    if current_user.role != UserRole.admin:
+
+    if current_user.role not in list(UserRole):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail='No access to resource',
             headers={'WWW-Authenticate': 'Bearer'},
         )
+
     user = db.exec(select(User).where(User.id == int(id))).first()
+    if current_user.role == UserRole.pump_attendant and user.id != current_user.id:
+        return None
+
     return user
 
 @router.patch("/users/verify/{id}", response_model=UserResponse, tags=['User'])
