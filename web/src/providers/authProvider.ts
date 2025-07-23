@@ -1,5 +1,5 @@
 import { AuthProvider } from "react-admin";
-import { AUTH_KEY, API_URL } from "./constants";
+import { AUTH_KEY, AUTH_DETAILS, API_URL } from "../constants";
 
 export const authProvider: AuthProvider = {
   login: async ({ username, password }) => {
@@ -7,7 +7,7 @@ export const authProvider: AuthProvider = {
     formData.append("username", username);
     formData.append("password", password);
 
-    const response = await fetch(`${API_URL}/auth/login`, {
+    const loginResponse = await fetch(`${API_URL}/auth/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -15,13 +15,30 @@ export const authProvider: AuthProvider = {
       body: formData.toString(),
     });
 
-    if (!response.ok) {
-      const error = await response.json();
+    if (!loginResponse.ok) {
+      const error = await loginResponse.json();
       return Promise.reject(error.message || "Login failed");
     }
 
-    const { access_token } = await response.json();
+    const { access_token } = await loginResponse.json();
     localStorage.setItem(AUTH_KEY, access_token);
+
+    const identityResponse = await fetch(`${API_URL}/me`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${access_token}`,
+      },
+    });
+
+    if (!identityResponse.ok) {
+      const error = await loginResponse.json();
+      return Promise.reject(error.message || "Login failed");
+    }
+
+    const authDetails = await identityResponse.text();
+    localStorage.setItem(AUTH_DETAILS, authDetails);
+    window.location.reload();
+
     return Promise.resolve();
   },
 
@@ -43,5 +60,11 @@ export const authProvider: AuthProvider = {
       return Promise.reject();
     }
     return Promise.resolve();
+  },
+
+  getIdentity: async () => {
+    const authCredentials = JSON.parse(localStorage.getItem(AUTH_DETAILS)!);
+    const { id, email, role, name, branch_id } = authCredentials;
+    return { id, email, role, name, branch_id };
   },
 };
