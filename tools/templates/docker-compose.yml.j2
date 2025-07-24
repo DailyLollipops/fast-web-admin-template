@@ -58,7 +58,8 @@ services:
       dockerfile: Dockerfile
       args:
         APP_ENV: ${APP_ENV}
-        REACT_APP_API_BASE_URL: ${REACT_APP_API_BASE_URL}
+        VITE_BASE_API_URL: ${VITE_BASE_API_URL}
+        VITE_APP_NAME: ${VITE_APP_NAME}
     ports:
       - 3000:3000
     volumes:
