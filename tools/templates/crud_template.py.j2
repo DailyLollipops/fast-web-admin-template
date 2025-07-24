@@ -88,9 +88,9 @@ def create_{{ model.__name__.lower() }}(
         db.commit()
         return {{ model.__name__.lower() }}
     except HTTPException as ex:
-        raise http_ex
+        raise ex
     except Exception as ex:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(ex))
 
 @router.get('/{{ route_name }}', response_model=typing.List[{{ model.__name__ }}Response], tags=['{{ model.__name__ }}'])
 def get_{{ model.__name__.lower() }}s(
@@ -135,9 +135,9 @@ def get_{{ model.__name__.lower() }}s(
         {{ model.__name__.lower() }}s = db.exec(query).all()
         return {{ model.__name__.lower() }}s
     except HTTPException as ex:
-        raise http_ex
+        raise ex
     except Exception as ex:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(ex))
 
 @router.get('/{{  route_name }}/{id}', response_model={{ model.__name__ }}Response, tags=['{{ model.__name__ }}'])
 def get_{{ model.__name__.lower() }}(
@@ -152,7 +152,7 @@ def get_{{ model.__name__.lower() }}(
             raise HTTPException(status_code=404, detail='{{ model.__name__ }} not found')
         return {{ model.__name__.lower() }}
     except Exception as ex:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(ex))
 
 @router.patch('/{{  route_name }}/{id}', response_model={{ model.__name__ }}Response, tags=['{{ model.__name__ }}'])
 def update_{{ model.__name__.lower() }}(
@@ -190,9 +190,9 @@ def update_{{ model.__name__.lower() }}(
         db.refresh({{ model.__name__.lower() }})
         return {{ model.__name__.lower() }}
     except HTTPException as ex:
-        raise http_ex
+        raise ex
     except Exception as ex:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(ex))
 
 @router.delete('/{{  route_name }}/{id}', response_model=ActionResponse, tags=['{{ model.__name__ }}'])
 def delete_{{ model.__name__.lower() }}(
@@ -212,7 +212,7 @@ def delete_{{ model.__name__.lower() }}(
             message=f'{{ model.__name__ }} deleted successfully'
         )
     except HTTPException as ex:
-        raise http_ex
+        raise ex
     except Exception as ex:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(ex))
 
