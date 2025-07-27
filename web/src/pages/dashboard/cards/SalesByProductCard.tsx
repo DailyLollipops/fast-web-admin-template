@@ -94,7 +94,7 @@ export const SalesByProductCard = ({
       }}
     >
       <Stack spacing={2} direction="column">
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" color="text.secondary" textAlign="center">
           Total Sales by Product
         </Typography>
         {series.length === 0 ? (

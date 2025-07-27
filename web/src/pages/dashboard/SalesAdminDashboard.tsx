@@ -1,100 +1,53 @@
-import { useState } from "react";
-import {
-  Title,
-  useGetList,
-  useGetManyReference,
-  useGetIdentity,
-} from "react-admin";
-import {
-  Box,
-  Button,
-  Card,
-  Grid,
-  CardContent,
-  Typography,
-} from "@mui/material";
-import { PointOfSale, Notifications } from "@mui/icons-material";
-// import { ProductCarousel } from "./PumpAttendantDashboard/ProductCarousel";
-import { AddSalesDialog } from "./PumpAttendantDashboard/AddSalesDialog";
+import { Title, useGetList } from "react-admin";
+import { Card, Grid, CardContent, Typography } from "@mui/material";
 import { WelcomeCard } from "./cards/WelcomeCard";
-import { BranchInfoCard } from "./PumpAttendantDashboard/BranchInfoCard";
 import { TotalSalesCard } from "./cards/TotalSalesCard";
 import { TotalDispensedCard } from "./cards/TotalDispensedCard";
 import { TotalExpensesCard } from "./cards/TotalExpensesCard";
 import { SalesByProductCard } from "./cards/SalesByProductCard";
 import { YearlySalesBarChart } from "./cards/YearlySalesChart";
+import { SalesByBranchCard } from "./cards/SalesByBranchCard";
 import { MachineCard } from "../../components";
-import { Audit, Product } from "../../types";
+import { Audit, Branch, Product } from "../../types";
 
-export const PumpAttendantDashboard = () => {
-  const [open, setOpen] = useState(false);
-  const { identity } = useGetIdentity();
-
+export const SalesAdminDashboard = () => {
   const { data: audits, isLoading: auditsLoading } = useGetList("audits", {
     sort: { field: "created_at", order: "DESC" },
     filter: { category: "sales" },
   });
 
+  const { data: branches, isLoading: branchesLoading } = useGetList(
+    "branches",
+    {
+      sort: { field: "id", order: "DESC" },
+    },
+  );
+
   const { data: products, isLoading: productsLoading } = useGetList(
     "products",
     {
       sort: { field: "id", order: "DESC" },
-      filter: { category: "sales" },
     },
   );
 
-  const { data: machines, isLoading: machinesLoading } = useGetManyReference(
+  const { data: machines, isLoading: machinesLoading } = useGetList(
     "machines",
     {
-      target: "branch_id",
-      id: identity?.branch_id,
       sort: { field: "id", order: "ASC" },
-      filter: undefined,
     },
   );
 
-  if (auditsLoading || productsLoading || machinesLoading) return null;
+  if (auditsLoading || productsLoading || branchesLoading || machinesLoading)
+    return null;
 
   return (
     <>
-      <AddSalesDialog open={open} onClose={() => setOpen(false)} />
-
       <Card>
         <Title title="Dashboard" />
         <CardContent>
-          <Box display="flex" flexDirection="column" gap={2}>
-            <Box
-              alignSelf="flex-end"
-              display="flex"
-              flexDirection={{ xs: "column", sm: "row" }}
-              gap={2}
-            >
-              <Button
-                variant="outlined"
-                startIcon={<Notifications />}
-                color="error"
-              >
-                Notify Inventory
-              </Button>
-              <Button
-                variant="outlined"
-                startIcon={<PointOfSale />}
-                onClick={() => setOpen(true)}
-              >
-                Add Sales
-              </Button>
-            </Box>
-          </Box>
           <Grid container spacing={2} sx={{ mt: 3 }}>
             <Grid size={{ xs: 12, lg: 7 }}>
               <WelcomeCard />
-            </Grid>
-            <Grid size={{ xs: 12, lg: 5 }}>
-              <BranchInfoCard
-                name="Main Branch"
-                location="Makati City, Philippines"
-                machineCount={5}
-              />
             </Grid>
           </Grid>
           <Typography variant="h6" my={3} sx={{ fontWeight: "bold" }}>
@@ -111,7 +64,7 @@ export const PumpAttendantDashboard = () => {
               <TotalExpensesCard audits={audits as Audit[]} />
             </Grid>
           </Grid>
-          <Grid container spacing={2}>
+          <Grid container spacing={2} mb={3}>
             <Grid size={{ xs: 12, md: 6, lg: 4 }}>
               <SalesByProductCard
                 audits={audits as Audit[]}
@@ -120,6 +73,14 @@ export const PumpAttendantDashboard = () => {
             </Grid>
             <Grid size={{ xs: 12, md: 6, lg: 8 }}>
               <YearlySalesBarChart audits={audits as Audit[]} />
+            </Grid>
+          </Grid>
+          <Grid container spacing={2}>
+            <Grid size={12}>
+              <SalesByBranchCard
+                audits={audits as Audit[]}
+                branches={branches as Branch[]}
+              />
             </Grid>
           </Grid>
           <Typography variant="h6" my={3} sx={{ fontWeight: "bold" }}>
@@ -131,7 +92,7 @@ export const PumpAttendantDashboard = () => {
                 <MachineCard
                   machine={machine}
                   actions={false}
-                  showReserves={true}
+                  showReserves={false}
                   showSales={true}
                 />
               </Grid>
