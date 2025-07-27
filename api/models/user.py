@@ -17,7 +17,7 @@ class User(SQLModel, table=True):
         sa_column_kwargs={'onupdate': lambda: datetime.now()}
     )
 
-    notifications: List['Notification'] = Relationship( # type: ignore
+    notifications: List['Notification'] = Relationship( # type: ignore  # noqa: F821
         back_populates='user', 
         sa_relationship_kwargs={'cascade':'all, delete-orphan'}
     ) 

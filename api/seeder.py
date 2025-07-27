@@ -39,7 +39,7 @@ def seed_random(num: int, no_override: bool, only: tuple[str]):
         print(f'Generated {len(instances)} instances from {f}')
         if instances and no_override:
             if db.exec(select(instances[0].__class__)).first():
-                print(f'Table has populated data and --no-override is set. Skipping seeding...')
+                print('Table has populated data and --no-override is set. Skipping seeding...')
                 continue
         all_instances.extend(instances)
 
@@ -72,7 +72,7 @@ def seed_list(num: int, no_override: bool, only: tuple[str]):
         print(f'Generated {len(instances)} instances from {f}')
         if instances and no_override:
             if db.exec(select(instances[0].__class__)).first():
-                print(f'Table has populated data and --no-override is set. Skipping seeding...')
+                print('Table has populated data and --no-override is set. Skipping seeding...')
                 continue
         all_instances.extend(instances)
     

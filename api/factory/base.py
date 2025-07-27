@@ -20,16 +20,16 @@ class BaseFactory:
                 data[column] = method()
                 continue
 
-            if info.annotation == str:
+            if info.annotation is str:
                 data[column] = faker.text()
 
-            elif info.annotation == int:
+            elif info.annotation is int:
                 data[column] = faker.random_number()
 
-            elif info.annotation == float:
+            elif info.annotation is float:
                 data[column] = float(faker.pydecimal())
 
-            elif info.annotation == bool:
+            elif info.annotation is bool:
                 data[column] = faker.boolean()
 
             elif info.annotation == datetime:

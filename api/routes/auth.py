@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Header, Form, Depends, status
+from fastapi import APIRouter, HTTPException, Header, Depends, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlmodel import Session, select
 from itsdangerous import URLSafeTimedSerializer
@@ -15,7 +15,6 @@ from settings import settings
 from utils import notificationutil, emailutil
 
 import bcrypt
-import os
 
 
 router = APIRouter()
@@ -23,9 +22,11 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/api/auth/login', auto_error=Fals
 pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 ACCESS_TOKEN_EXPIRATION = 3600
 
+
 class Token(BaseModel):
     access_token: str
     token_type: str
+
 
 async def get_current_user(
     api_key: Annotated[Optional[str], Header()] = None,
@@ -61,6 +62,7 @@ async def get_current_user(
     
     return user
 
+
 async def get_user_by_api_key(
     db: Session = Depends(get_db), 
     api_key: Annotated[Optional[str], Header()] = None
@@ -78,6 +80,7 @@ async def get_user_by_api_key(
         )
     return user
 
+
 async def get_user_by_jwt_token(
     db: Annotated[Session, Depends(get_db)], 
     token: Annotated[str, Depends(oauth2_scheme)] = None
@@ -93,12 +96,13 @@ async def get_user_by_jwt_token(
         username: str = payload.get('sub')
         if username is None:
             raise credentials_exception
-    except:
+    except Exception:
         raise credentials_exception
     user = db.exec(select(User).where(User.email == username)).first()
     if user is None:
         raise credentials_exception
     return user
+
 
 def authenticate_user(username: str, password: str, db: Session):
     query = select(User).where(User.email == username)
@@ -108,6 +112,7 @@ def authenticate_user(username: str, password: str, db: Session):
     if not pwd_context.verify(password, user.password):
         return None
     return user
+
 
 def create_access_token(data: dict, salt: str | bytes | None = None):
     serializer = URLSafeTimedSerializer(settings.SECRET_KEY)
@@ -231,7 +236,7 @@ async def verify_email(token: str, db: Session = Depends(get_db)):
         username: str = payload.get('sub')
         if username is None:
             raise credentials_exception
-    except:
+    except Exception:
         raise credentials_exception
     
     user = db.exec(select(User).where(User.email == username)).first()

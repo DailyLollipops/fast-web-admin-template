@@ -13,15 +13,19 @@ from database import get_db
 from utils import notificationutil
 from .auth import get_current_user
 
+
 router = APIRouter()
+
 
 class UserRole(str, Enum):
     admin = 'admin'
     user = 'user'
 
+
 class ActionResponse(BaseModel):
     success: bool
     message: str
+
 
 class UserCreate(BaseModel):
     email: str
@@ -30,11 +34,13 @@ class UserCreate(BaseModel):
     role: Optional[str] = 'user'
     verified: Optional[bool] = False
 
+
 class UserResponse(BaseModel):
     id: int
     email: str 
     role: str 
     name: str
+
 
 @router.post('/users', response_model=UserResponse, tags=['User'])
 async def create_user(
@@ -66,6 +72,7 @@ async def create_user(
     db.commit()
     db.refresh(new_user)
     return new_user
+
 
 @router.get('/users', response_model=List[UserResponse], tags=['User'])
 async def get_users(
@@ -125,6 +132,7 @@ async def get_users(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.get('/users/{id}', response_model=UserResponse, tags=['User'])
 async def get_user(
     id: str,
@@ -148,6 +156,7 @@ async def get_user(
         )
     user = db.exec(select(User).where(User.id == int(id))).first()
     return user
+
 
 @router.patch("/users/verify/{id}", response_model=UserResponse, tags=['User'])
 async def verify_user(
@@ -179,6 +188,7 @@ async def verify_user(
     )
 
     return user
+
 
 @router.patch('/users/role/{id}', response_model=UserResponse, tags=['User'])
 async def update_user_role(
@@ -217,6 +227,7 @@ async def update_user_role(
     db.refresh(user)
 
     return user
+
 
 @router.delete('/users/{id}', tags=['User'])
 async def delete_user(
@@ -264,6 +275,7 @@ async def delete_user(
         success=True,
         message='User deleted successfully'
     )
+
 
 @router.get('/me', response_model=UserResponse, tags=['User'])
 async def me(

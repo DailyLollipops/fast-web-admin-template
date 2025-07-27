@@ -16,7 +16,7 @@ class Notification(SQLModel, table=True):
         sa_column_kwargs={'onupdate': lambda: datetime.now()}
     )
 
-    user: 'User' = Relationship( # type: ignore
+    user: 'User' = Relationship( # type: ignore  # noqa: F821
         sa_relationship_kwargs={"primaryjoin": "User.id == Notification.user_id"}, 
         back_populates='notifications'
     ) 

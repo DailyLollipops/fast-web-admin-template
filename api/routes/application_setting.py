@@ -141,7 +141,7 @@ def delete_application_setting(
         db.commit()
         return ActionResponse(
             success=True,
-            message=f'Application Setting deleted successfully'
+            message='Application Setting deleted successfully'
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

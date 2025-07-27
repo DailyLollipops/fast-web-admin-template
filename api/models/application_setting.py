@@ -13,4 +13,4 @@ class ApplicationSetting(SQLModel, table=True):
     )
     modified_by_id: int = Field(foreign_key='users.id')
 
-    modified_by: 'User' = Relationship(sa_relationship_kwargs={"lazy": "joined"}) # type: ignore
+    modified_by: 'User' = Relationship(sa_relationship_kwargs={"lazy": "joined"})  # type: ignore # noqa: F821

@@ -167,7 +167,7 @@ def delete_template(
         db.commit()
         return ActionResponse(
             success=True,
-            message=f'Template deleted successfully'
+            message='Template deleted successfully'
         )
     except HTTPException as http_ex:
         raise http_ex
