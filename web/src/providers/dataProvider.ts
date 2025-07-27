@@ -45,14 +45,11 @@ export const dataProvider: DataProvider = withLifecycleCallbacks(
       }
 
       const url = `${API_URL}/${resource}?${stringify(query)}`;
-
       const { json } = await httpClient(url, { signal: params.signal });
-      const data = json as Array<
-        Record<string, string | number | boolean | null>
-      >;
+
       return {
-        data: json,
-        total: data.length,
+        data: json.data,
+        total: json.total,
       };
     },
 
@@ -96,14 +93,11 @@ export const dataProvider: DataProvider = withLifecycleCallbacks(
       }
 
       const url = `${API_URL}/${resource}?${stringify(query)}`;
-
       const { json } = await httpClient(url, { signal: params.signal });
-      const data = json as Array<
-        Record<string, string | number | boolean | null>
-      >;
+
       return {
-        data: json,
-        total: data.length,
+        data: json.data,
+        total: json.total,
       };
     },
 
@@ -160,13 +154,10 @@ export const dataProvider: DataProvider = withLifecycleCallbacks(
       const { json } = await httpClient(url, {
         method: "GET",
       });
-      const data = json as Array<
-        Record<string, string | number | boolean | null>
-      >;
 
       return {
-        data: json,
-        total: data.length,
+        data: json.data,
+        total: json.total,
       };
     },
 
@@ -176,9 +167,7 @@ export const dataProvider: DataProvider = withLifecycleCallbacks(
         method: "GET",
       });
 
-      return {
-        data: json,
-      };
+      return { data: json };
     },
 
     createManyToManyReference: async (
@@ -200,9 +189,7 @@ export const dataProvider: DataProvider = withLifecycleCallbacks(
         method: "DELETE",
       });
 
-      return {
-        data: json,
-      };
+      return { data: json };
     },
   },
   [],

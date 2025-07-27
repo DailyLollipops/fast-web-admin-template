@@ -3,7 +3,7 @@
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from sqlmodel import Session, select, asc, desc
+from sqlmodel import Session, select, asc, desc, func
 import typing
 import json
 
@@ -40,6 +40,7 @@ class {{ model.__name__ }}Create(BaseModel):
         {%- endif %}
     {% endfor %}
 
+
 class {{ model.__name__ }}Response(BaseModel):
     {% for field in model.model_fields -%}
         {% set model_field = model.model_fields[field] -%}
@@ -54,6 +55,7 @@ class {{ model.__name__ }}Response(BaseModel):
         {%- endif %}
     {% endfor %}
 
+
 class {{ model.__name__ }}Update(BaseModel):
     {%- for field in model.model_fields -%}
         {% if field != 'id' -%}
@@ -66,6 +68,12 @@ class {{ model.__name__ }}Update(BaseModel):
             {%- endif %}
         {%- endif %}
     {% endfor %}
+
+
+class {{ model.__name__ }}ListResponse(BaseModel):
+    total: int
+    data: typing.List[{{ model.__name__ }}Response]
+
 
 @router.post('/{{  route_name }}', response_model={{ model.__name__ }}Response, tags=['{{ model.__name__ }}'])
 async def create_{{ model.__name__.lower() }}(
@@ -92,7 +100,8 @@ async def create_{{ model.__name__.lower() }}(
     except Exception as ex:
         raise HTTPException(status_code=500, detail=str(ex))
 
-@router.get('/{{ route_name }}', response_model=typing.List[{{ model.__name__ }}Response], tags=['{{ model.__name__ }}'])
+
+@router.get('/{{ route_name }}', response_model={{ model.__name__ }}ListResponse, tags=['{{ model.__name__ }}'])
 async def get_{{ model.__name__.lower() }}s(
     {%- if read_login_required %}{{ '\n\t' }}current_user: typing.Annotated[User, Depends(get_current_user)], {% endif %} 
     order_field: str = 'id', 
@@ -118,6 +127,10 @@ async def get_{{ model.__name__.lower() }}s(
                     continue
                 column = getattr({{ model.__name__ }}, key)
                 query = query.where(column == value)
+
+        count_query = select(func.count()).select_from(query.subquery())
+        total = db.exec(count_query).scalar() or 0
+
         if order_field is not None:
             if order_field not in {{ model.__name__ }}.model_fields:
                 raise HTTPException(
@@ -128,16 +141,17 @@ async def get_{{ model.__name__.lower() }}s(
                 query = query.order_by(asc(getattr({{ model.__name__ }}, order_field)))
             else:
                 query = query.order_by(desc(getattr({{ model.__name__ }}, order_field)))
-        if limit is not None:
-            query = query.limit(limit)
         if offset is not None:
             query = query.offset(offset)
+        if limit is not None:
+            query = query.limit(limit)
         {{ model.__name__.lower() }}s = db.exec(query).all()
         return {{ model.__name__.lower() }}s
     except HTTPException as ex:
         raise ex
     except Exception as ex:
         raise HTTPException(status_code=500, detail=str(ex))
+
 
 @router.get('/{{  route_name }}/{id}', response_model={{ model.__name__ }}Response, tags=['{{ model.__name__ }}'])
 async def get_{{ model.__name__.lower() }}(
@@ -153,6 +167,7 @@ async def get_{{ model.__name__.lower() }}(
         return {{ model.__name__.lower() }}
     except Exception as ex:
         raise HTTPException(status_code=500, detail=str(ex))
+
 
 @router.patch('/{{  route_name }}/{id}', response_model={{ model.__name__ }}Response, tags=['{{ model.__name__ }}'])
 async def update_{{ model.__name__.lower() }}(
@@ -193,6 +208,7 @@ async def update_{{ model.__name__.lower() }}(
         raise ex
     except Exception as ex:
         raise HTTPException(status_code=500, detail=str(ex))
+
 
 @router.delete('/{{  route_name }}/{id}', response_model=ActionResponse, tags=['{{ model.__name__ }}'])
 async def delete_{{ model.__name__.lower() }}(
