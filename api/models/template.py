@@ -2,7 +2,8 @@ from sqlmodel import SQLModel, Field, Relationship
 from datetime import datetime
 
 class Template(SQLModel, table=True):
-    __tablename__ = 'templates'
+    __tablename__ = 'templates' # type: ignore
+
     id: int = Field(default=None, primary_key=True)
     name: str = Field(unique=True)
     template_type: str = Field()

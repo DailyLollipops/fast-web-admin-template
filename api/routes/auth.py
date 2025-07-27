@@ -5,6 +5,7 @@ from itsdangerous import URLSafeTimedSerializer
 from passlib.context import CryptContext
 from typing import Annotated, Optional
 from pydantic import BaseModel
+import bcrypt
 
 from models.application_setting import ApplicationSetting
 from models.template import Template
@@ -14,19 +15,15 @@ from database import get_db
 from settings import settings
 from utils import notificationutil, emailutil
 
-import bcrypt
-
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/api/auth/login', auto_error=False)
 pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 ACCESS_TOKEN_EXPIRATION = 3600
 
-
 class Token(BaseModel):
     access_token: str
     token_type: str
-
 
 async def get_current_user(
     api_key: Annotated[Optional[str], Header()] = None,
@@ -62,7 +59,6 @@ async def get_current_user(
     
     return user
 
-
 async def get_user_by_api_key(
     db: Session = Depends(get_db), 
     api_key: Annotated[Optional[str], Header()] = None
@@ -80,10 +76,9 @@ async def get_user_by_api_key(
         )
     return user
 
-
 async def get_user_by_jwt_token(
     db: Annotated[Session, Depends(get_db)], 
-    token: Annotated[str, Depends(oauth2_scheme)] = None
+    token: Annotated[str, Depends(oauth2_scheme)] = ""
 ):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -103,7 +98,6 @@ async def get_user_by_jwt_token(
         raise credentials_exception
     return user
 
-
 def authenticate_user(username: str, password: str, db: Session):
     query = select(User).where(User.email == username)
     user = db.exec(query).first()
@@ -112,7 +106,6 @@ def authenticate_user(username: str, password: str, db: Session):
     if not pwd_context.verify(password, user.password):
         return None
     return user
-
 
 def create_access_token(data: dict, salt: str | bytes | None = None):
     serializer = URLSafeTimedSerializer(settings.SECRET_KEY)
@@ -154,6 +147,10 @@ async def register_user(
         select(ApplicationSetting)
         .where(ApplicationSetting.name == ApplicationSettings.USER_VERIFICATION)
     ).first()
+
+    if not verification_setting:
+        raise Exception('User verification setting not found. Perhaps you forgot to run migration?')
+
     hashed_password = bcrypt.hashpw(data.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
     new_user = User(
@@ -185,23 +182,32 @@ async def register_user(
 
     if verification_setting.value == VerificationMethod.EMAIL:
         verification_token = create_access_token(data={'sub': data.email}, salt='user-verification')
-        base_url = db.exec(
+
+        base_url_setting = db.exec(
             select(ApplicationSetting)
             .where(ApplicationSetting.name == ApplicationSettings.BASE_URL)
-        ).first().value
-        email_verification_template_path = db.exec(
+        ).first()
+        if not base_url_setting:
+            raise Exception('Email base url setting not found. Perhaps you forgot to run migration?')
+        
+        email_template_setting = db.exec(
             select(Template)
             .where(ApplicationSetting.name == 'email_verification')
-        ).first().path
+        ).first()
+        if not email_template_setting:
+            raise Exception('Email template path setting not found. Perhaps you forgot to run migration?')
+        
+        base_url = base_url_setting.value
+        email_verification_template_path = email_template_setting.path
         verification_url = f'{base_url}/api/auth/verify_email?token={verification_token}'
-        data = {
+        new_data = {
             'name': new_user.name,
             'verification_url': verification_url
         }
         await emailutil.send_email(
             db=db,
             template=email_verification_template_path,
-            data=data,
+            data=new_data,
             subject='Verify your email address',
             recipients=[new_user.email]
         )
@@ -232,7 +238,7 @@ async def verify_email(token: str, db: Session = Depends(get_db)):
 
     try:
         serializer = URLSafeTimedSerializer(settings.SECRET_KEY)
-        payload = serializer.loads(token, max=ACCESS_TOKEN_EXPIRATION, salt='user-verification')
+        payload = serializer.loads(token, max_age=ACCESS_TOKEN_EXPIRATION, salt='user-verification')
         username: str = payload.get('sub')
         if username is None:
             raise credentials_exception

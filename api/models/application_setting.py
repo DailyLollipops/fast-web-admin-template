@@ -2,7 +2,8 @@ from sqlmodel import SQLModel, Field, Relationship
 from datetime import datetime
 
 class ApplicationSetting(SQLModel, table=True):
-    __tablename__ = 'application_settings'
+    __tablename__ = 'application_settings' # type: ignore
+
     id: int = Field(default=None, primary_key=True)
     name: str = Field(unique=True)
     value: str = Field(default='')

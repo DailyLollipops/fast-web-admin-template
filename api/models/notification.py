@@ -2,7 +2,8 @@ from sqlmodel import SQLModel, Field, Relationship
 from datetime import datetime
 
 class Notification(SQLModel, table=True):
-    __tablename__ = 'notifications'
+    __tablename__ = 'notifications' # type: ignore
+
     id: int = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key='users.id')
     triggered_by: int = Field(...)

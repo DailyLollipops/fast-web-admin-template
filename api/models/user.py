@@ -3,7 +3,8 @@ from datetime import datetime
 from typing import List
 
 class User(SQLModel, table=True):
-    __tablename__ = 'users'
+    __tablename__ = 'users' # type: ignore
+
     id: int = Field(default=None, primary_key=True)
     name: str = Field(...)
     email: str = Field(unique=True)

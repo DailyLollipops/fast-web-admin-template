@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, status
-from sqlmodel import Session, select, delete, asc, desc
+from sqlmodel import Session, select, delete, asc, desc, func
 from sqlalchemy import or_
 from enum import Enum
 from typing import Annotated, Optional, List
@@ -42,6 +42,11 @@ class UserResponse(BaseModel):
     name: str
 
 
+class UserListResponse(BaseModel):
+    total: int
+    data: List[UserResponse]
+
+
 @router.post('/users', response_model=UserResponse, tags=['User'])
 async def create_user(
     data: UserCreate,
@@ -74,14 +79,14 @@ async def create_user(
     return new_user
 
 
-@router.get('/users', response_model=List[UserResponse], tags=['User'])
+@router.get('/users', response_model=UserListResponse, tags=['User'])
 async def get_users(
     current_user: Annotated[User, Depends(get_current_user)],
     order_field: str = 'id', 
     order_by: str = 'desc', 
-    limit: int = None, 
-    offset: int = None, 
-    filters: str = None, 
+    limit: Optional[int] = None, 
+    offset: Optional[int] = None, 
+    filters: Optional[str] = None, 
     db: Session = Depends(get_db),
 ):
     """
@@ -111,6 +116,7 @@ async def get_users(
                     continue
                 column = getattr(User, key)
                 query = query.where(column == value)
+
         if order_field is not None:
             if order_field not in User.model_fields:
                 raise HTTPException(
@@ -121,12 +127,19 @@ async def get_users(
                 query = query.order_by(asc(getattr(User, order_field)))
             else:
                 query = query.order_by(desc(getattr(User, order_field)))
-        if limit is not None:
-            query = query.limit(limit)
+
+        count_query = select(func.count()).select_from(query.subquery())
+        total = db.exec(count_query).first() or 0
+
         if offset is not None:
             query = query.offset(offset)
-        branchs = db.exec(query).all()
-        return branchs
+
+        if limit is not None:
+            query = query.limit(limit)
+
+        users = db.exec(query).all()
+        users = [UserResponse(**d.model_dump()) for d in users]
+        return UserListResponse(total=total, data=users)
     except HTTPException as http_ex:
         raise http_ex
     except Exception as e:
@@ -261,13 +274,15 @@ async def delete_user(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='Cannot delete user with admin role',
         )
+
     query = delete(Notification).where(
         or_(
-            Notification.user_id == user.id,
-            Notification.triggered_by == user.id
+            Notification.user_id == user.id, # type: ignore
+            Notification.triggered_by == user.id # type: ignore
         )
     )
-    db.exec(query)
+
+    db.exec(query) # type: ignore
     db.delete(user)
     db.commit()
 
