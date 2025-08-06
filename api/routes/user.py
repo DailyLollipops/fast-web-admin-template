@@ -140,10 +140,10 @@ async def get_users(
         users = db.exec(query).all()
         users = [UserResponse(**d.model_dump()) for d in users]
         return UserListResponse(total=total, data=users)
-    except HTTPException as http_ex:
-        raise http_ex
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except HTTPException as ex:
+        raise ex
+    except Exception as ex:
+        raise HTTPException(status_code=500, detail=str(ex))
 
 
 @router.get('/users/{id}', response_model=UserResponse, tags=['User'])
