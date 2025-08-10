@@ -67,11 +67,11 @@ services:
     build:
       target: web
     ports:
-      - 3000:3000
+      - 5173:5173
     volumes:
-      - ./web:/app
-      - /app/node_modules
-      - /app/build
+      - ./web:/workspace/app
+      - /workspace/app/node_modules
+      - /workspace/app/build
     command: npm run dev
     depends_on:
       - api
@@ -123,14 +123,10 @@ services:
 
   pr-web:
     build:
-      target: web
+      target: web_prod
     ports:
-      - 3000:3000
-    volumes:
-      - ./web:/app
-      - /app/node_modules
-      - /app/build
-    command: serve -s build
+      - 5173:5173
+    command: serve -s dist -l 5173
     depends_on:
       - pr-api
     networks:
@@ -147,8 +143,8 @@ services:
       - 443:443
     volumes:
       - ./provision/Caddyfile.prod:/etc/caddy/Caddyfile
-      - caddy_data:/data
-      - caddy_config:/config
+      - pr_caddy_data:/data
+      - pr_caddy_config:/config
     depends_on:
       - pr-web
       - pr-api
@@ -161,6 +157,8 @@ volumes:
   mysql_data:
   caddy_data:
   caddy_config:
+  pr_caddy_data:
+  pr_caddy_config:
 
 networks:
   app_network:

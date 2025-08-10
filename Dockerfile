@@ -26,7 +26,14 @@ ENV APP_ENV=${APP_ENV} \
 
 WORKDIR /workspace/app
 
-COPY ./web/package*.json ./
+COPY ./web/package*.json /workspace/app/
 RUN npm install
-RUN npm install serve
 RUN npm install -D vite
+
+FROM web AS web_prod
+
+COPY ./web /workspace/app/
+
+RUN apk add xsel
+RUN npm install -g serve
+RUN npm run build

@@ -1,5 +1,5 @@
 {{ domain }} {
-    reverse_proxy /api/* api:8000
-    reverse_proxy web:5173
+    reverse_proxy /api/* {% if prod %}pr-{%- endif %}api:8000
+    reverse_proxy /* {% if prod %}pr-{%- endif %}web:5173
 }
 
