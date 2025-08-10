@@ -1,20 +1,21 @@
-# Generated code for ApplicationSetting model
-
 from datetime import datetime
-from fastapi import APIRouter, HTTPException, Depends, Query
-from pydantic import BaseModel
-from sqlmodel import Session, select, asc, desc, func
-from typing import Annotated, List, Optional
-import json
+from enum import Enum
+from typing import Annotated
 
 from database import get_db
-from models.user import User
+from fastapi import APIRouter, Depends, HTTPException, status
 from models.application_setting import ApplicationSetting
+from models.user import User
+from pydantic import BaseModel
+from sqlmodel import Session
+
 from .auth import get_current_user
+from .utils import queryutil
+from .utils.queryutil import GetListParams, get_list_params
 
 
 router = APIRouter()
-
+TAGS: list[str | Enum] = ['Application Setting']
 
 class ActionResponse(BaseModel):
     success: bool
@@ -37,145 +38,109 @@ class ApplicationSettingResponse(BaseModel):
 
 class ApplicationSettingListResponse(BaseModel):
     total: int
-    data: List[ApplicationSettingResponse]
+    data: list[ApplicationSettingResponse]
 
 
-@router.post('/application_settings', response_model=ApplicationSettingResponse, tags=['ApplicationSetting'])
+class ApplicationSettingUpdate(BaseModel):
+    name: str | None = None
+    value: str | None = ''
+
+
+@router.post('/application_settings', response_model=ApplicationSettingResponse, tags=TAGS)
 def create_application_setting(
+	current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
     data: ApplicationSettingCreate,
-	current_user: Annotated[User, Depends(get_current_user)],   
-    db: Session = Depends(get_db)
 ):
     try:
-        if db.exec(select(ApplicationSetting).where(ApplicationSetting.name == data.name)).first():
-            raise HTTPException(
-                status_code=400,
-                detail=f'ApplicationSetting with name of {data.name} already exists'
-            )
-            
-        application_setting = ApplicationSetting(**data.model_dump(), modified_by_id=current_user.id)
-        db.add(application_setting)
-        db.commit()
-        return application_setting
+        obj = ApplicationSetting(
+            **data.model_dump(),
+            modified_by_id=current_user.id
+        )
+        result = queryutil.create_one(db, obj)
+        return result
     except HTTPException as ex:
         raise ex
     except Exception as ex:
-        raise HTTPException(status_code=500, detail=str(ex))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(ex)
+        ) from ex
 
 
-@router.get('/application_settings', response_model=ApplicationSettingListResponse, tags=['ApplicationSetting'])
+@router.get('/application_settings', response_model=ApplicationSettingListResponse, tags=TAGS)
 def get_application_settings(
-	current_user: Annotated[User, Depends(get_current_user)],  
-    order_field: str = 'id', 
-    order_by: str = 'desc', 
-    limit: Optional[int] = None, 
-    offset: Optional[int] = None, 
-    filters: Optional[str] = None, 
-    db: Session = Depends(get_db)
+	current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+    params: Annotated[GetListParams, Depends(get_list_params)],
 ):
     try:
-        query = select(ApplicationSetting)
-        if filters:
-            filters_dict = {}
-            filter_exc = HTTPException(status_code=400, detail='Invalid filter parameter')
-            try:
-                filters_dict = json.loads(filters)
-                if not isinstance(filters_dict, dict):
-                    raise filter_exc
-            except Exception:
-                raise filter_exc
-            for key, value in filters_dict.items():
-                if key not in ApplicationSetting.model_fields:
-                    continue
-                column = getattr(ApplicationSetting, key)
-                query = query.where(column == value)
-
-        if order_field is not None:
-            if order_field not in ApplicationSetting.model_fields:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f'{order_field} is not a valid field'
-                )
-            if order_by == 'asc':
-                query = query.order_by(asc(getattr(ApplicationSetting, order_field)))
-            else:
-                query = query.order_by(desc(getattr(ApplicationSetting, order_field)))
-
-        count_query = select(func.count()).select_from(query.subquery())
-        total = db.exec(count_query).first() or 0
-
-        if offset is not None:
-            query = query.offset(offset)
-
-        if limit is not None:
-            query = query.limit(limit)
-
-        application_settings = db.exec(query).all()
-        application_settings = [ApplicationSettingResponse(**d.model_dump()) for d in application_settings]
-        return ApplicationSettingListResponse(total=total, data=application_settings)
+        total, results = queryutil.get_list(db, ApplicationSetting, params)
+        data = [ApplicationSettingResponse(**r.model_dump()) for r in results]
+        return ApplicationSettingListResponse(total=total, data=data)
     except HTTPException as ex:
         raise ex
     except Exception as ex:
-        raise HTTPException(status_code=500, detail=str(ex))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(ex)
+        ) from ex
 
 
-@router.get('/application_settings/{name}', response_model=ApplicationSettingResponse, tags=['ApplicationSetting'])
+@router.get('/application_settings/{id}', response_model=ApplicationSettingResponse, tags=TAGS)
 def get_application_setting(
-	current_user: Annotated[User, Depends(get_current_user)],  
-    name: str, 
-    db: Session = Depends(get_db)
+	current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+    id: int,
 ):
     try:
-        query = select(ApplicationSetting).where(ApplicationSetting.name == name)
-        application_setting = db.exec(query).first()
-        if not application_setting:
-            raise HTTPException(status_code=404, detail='Application Setting not found')
-        return application_setting
+        result = queryutil.get_one(db, ApplicationSetting, id)
+        return result
+    except HTTPException as ex:
+        raise ex
     except Exception as ex:
-        raise HTTPException(status_code=500, detail=str(ex))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(ex)
+        ) from ex
 
 
-@router.patch('/application_settings/{name}', response_model=ApplicationSettingResponse, tags=['ApplicationSetting'])
+@router.patch('/application_settings/{id}', response_model=ApplicationSettingResponse, tags=TAGS)
 def update_application_setting(
-	current_user: Annotated[User, Depends(get_current_user)],  
-    name: str, 
-    value: str = Query(...),
-    db: Session = Depends(get_db)
+	current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+    id: int,
+    data: ApplicationSettingUpdate,
 ):
-    error_code = 500
     try:
-        query = select(ApplicationSetting).where(ApplicationSetting.name == name)
-        application_setting = db.exec(query).first()
-        if not application_setting:
-            error_code = 404
-            raise Exception('Application Setting not found')
-        
-        application_setting.value = value
-        application_setting.modified_by_id = current_user.id
-        db.add(application_setting)
-        db.commit()
-        db.refresh(application_setting)
-        return application_setting
+        obj = ApplicationSetting(id=id, **data.model_dump())
+        result = queryutil.update_one(db, obj)
+        return result
+    except HTTPException as ex:
+        raise ex
     except Exception as ex:
-        raise HTTPException(status_code=error_code, detail=str(ex))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(ex)
+        ) from ex
 
 
-@router.delete('/application_settings/{name}', response_model=ActionResponse, tags=['ApplicationSetting'])
+@router.delete('/application_settings/{id}', response_model=ActionResponse, tags=TAGS)
 def delete_application_setting(
-    name: str,
-	current_user: Annotated[User, Depends(get_current_user)],  
-    db: Session = Depends(get_db)
+	current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+    id: int,
 ):
     try:
-        query = select(ApplicationSetting).where(ApplicationSetting.name == name)
-        application_setting = db.exec(query).first()
-        if not application_setting:
-            raise HTTPException(status_code=404, detail='Application Setting not found')
-        db.delete(application_setting)
-        db.commit()
+        queryutil.delete_one(db, ApplicationSetting, id)
         return ActionResponse(
             success=True,
             message='Application Setting deleted successfully'
         )
+    except HTTPException as ex:
+        raise ex
     except Exception as ex:
-        raise HTTPException(status_code=500, detail=str(ex))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(ex)
+        ) from ex

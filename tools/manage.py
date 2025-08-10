@@ -1,18 +1,20 @@
-from jinja2 import Environment, Template
-from sqlmodel import SQLModel
-from textblob import TextBlob
-import click
 import importlib
 import os
 import secrets
 import subprocess
 import sys
 
+import click
+from jinja2 import Environment, Template
+from sqlmodel import SQLModel
+from textblob import TextBlob
+
+
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 def create_env_file(app_name: str, outfile: str):
     app_key = secrets.token_hex(32)
-    with open('tools/templates/env.j2', 'r') as f:
+    with open('tools/templates/env.j2') as f:
         template_content = f.read()
 
     template = Template(template_content)
@@ -22,7 +24,7 @@ def create_env_file(app_name: str, outfile: str):
         file.write(output)
 
 def create_compose_file(app_name: str, outfile: str):
-    with open('tools/templates/docker-compose.yml.j2', 'r') as f:
+    with open('tools/templates/docker-compose.yml.j2') as f:
         template_content = f.read()
 
     template = Template(template_content)
@@ -32,7 +34,7 @@ def create_compose_file(app_name: str, outfile: str):
         file.write(output)
 
 def create_caddy_file(app_name: str, domain: str, outfile: str):
-    with open('tools/templates/Caddyfile.j2', 'r') as f:
+    with open('tools/templates/Caddyfile.j2') as f:
         template_content = f.read()
 
     template = Template(template_content)
@@ -118,7 +120,7 @@ def run_migration():
 @click.option('--update-login-required', '-ulr', is_flag=True, default=False, help='Require login for UPDATE route')
 @click.option('--delete-login-required', '-dlr', is_flag=True, default=False, help='Require login for DELETE route')
 def generate_model_route(
-    model: str, 
+    model: str,
     create_login_required: bool,
     read_login_required: bool,
     update_login_required: bool,
@@ -134,7 +136,7 @@ def generate_model_route(
     model: SQLModel = getattr(module, model_name)
     route_name = TextBlob(module_name).words[0].pluralize()
 
-    with open('tools/templates/crud_template.py.j2', 'r') as f:
+    with open('tools/templates/crud_template.py.j2') as f:
         template_content = f.read()
 
     def getattr_filter(obj, attr, default=None):
@@ -160,9 +162,9 @@ def generate_model_route(
 @click.command()
 @click.argument('model')
 def generate_model_factory(
-    model: str, 
+    model: str,
 ):
-    with open('tools/templates/factory.py.j2', 'r') as f:
+    with open('tools/templates/factory.py.j2') as f:
         template_content = f.read()
 
     def getattr_filter(obj, attr, default=None):

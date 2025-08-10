@@ -1,19 +1,23 @@
 # Generated code for {{ model.__name__ }} model
 
 from datetime import datetime
-from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel
-from sqlmodel import Session, select, asc, desc, func
-import typing
-import json
+from enum import Enum
+from typing import Annotated
 
 from database import get_db
+from fastapi import APIRouter, Depends, HTTPException, status
 from models.user import User
 from models.{{ module }} import {{ model.__name__ }}
+from pydantic import BaseModel
+from sqlmodel import Session
+
 from .auth import get_current_user
+from .utils import queryutil
+from .utils.queryutil import GetListParams, get_list_params
+
 
 router = APIRouter()
-
+TAGS: list[str | Enum] = ['{{ model.__name__ }}']
 
 class ActionResponse(BaseModel):
     success: bool
@@ -32,9 +36,9 @@ class {{ model.__name__ }}Create(BaseModel):
             {% endif -%}
             {%- if not model_field.is_required() -%}
                 {%- if model_field.default is string -%}
-                    {{ '' }} = '{{ model_field.get_default() }}'
+                    {{ '' }} | None = '{{ model_field.get_default() }}'
                 {%- else -%}
-                    {{ '' }} = {{  model_field.get_default() }}
+                    {{ '' }} | None = {{  model_field.get_default() }}
                 {%- endif -%}
             {% endif -%}
         {%- endif %}
@@ -62,9 +66,9 @@ class {{ model.__name__ }}Update(BaseModel):
             {% set model_field = model.model_fields[field] -%}
             {% set annotation = model_field.annotation -%}
             {%- if 'class' in annotation|string -%}
-                {{ field }}: {{ annotation.__name__ }} = None
+                {{ field }}: {{ annotation.__name__ }} | None = None
             {%- else -%}
-                {{ field }}: {{ annotation }} = None
+                {{ field }}: {{ annotation }} | None = None
             {%- endif %}
         {%- endif %}
     {% endfor %}
@@ -72,166 +76,102 @@ class {{ model.__name__ }}Update(BaseModel):
 
 class {{ model.__name__ }}ListResponse(BaseModel):
     total: int
-    data: typing.List[{{ model.__name__ }}Response]
+    data: list[{{ model.__name__ }}Response]
 
 
-@router.post('/{{  route_name }}', response_model={{ model.__name__ }}Response, tags=['{{ model.__name__ }}'])
+@router.post('/{{  route_name }}', response_model={{ model.__name__ }}Response, tags=TAGS)
 async def create_{{ model.__name__.lower() }}(
-    data: {{ model.__name__ }}Create, 
-    {%- if create_login_required %}{{ '\n\t' }}current_user: typing.Annotated[User, Depends(get_current_user)], {% endif %}  
-    db: Session = Depends(get_db)
+    data: {{ model.__name__ }}Create,
+    {%- if create_login_required %}{{ '\n\t' }}current_user: Annotated[User, Depends(get_current_user)], {%- endif %}
+    db: Annotated[Session, Depends(get_db)],
 ):
     try:
-        {%- for field in model.model_fields %}
-            {%- if model.model_fields[field] | getattr('unique', None) == True %}
-        if db.exec(select({{ model.__name__ }}).where({{ model.__name__ }}.{{ field }} == data.{{ field }})).first():
-            raise HTTPException(
-                status_code=400,
-                detail=f'{{ model.__name__ }} with {{ field }} of {data.{{ field }}} already exists'
-            )
-            {% endif %}
-        {%- endfor %}
-        {{ model.__name__.lower() }} = {{ model.__name__ }}(**data.model_dump())
-        db.add({{ model.__name__.lower() }})
-        db.commit()
-        return {{ model.__name__.lower() }}
+        obj = {{ model.__name__ }}(**data.model_dump())
+        result = queryutil.create_one(db, obj)
+        return result
     except HTTPException as ex:
         raise ex
     except Exception as ex:
-        raise HTTPException(status_code=500, detail=str(ex))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(ex)
+        ) from ex
 
 
 @router.get('/{{ route_name }}', response_model={{ model.__name__ }}ListResponse, tags=['{{ model.__name__ }}'])
 async def get_{{ model.__name__.lower() }}s(
-    {%- if read_login_required %}{{ '\n\t' }}current_user: typing.Annotated[User, Depends(get_current_user)], {% endif %} 
-    order_field: str = 'id', 
-    order_by: str = 'desc', 
-    limit: int = None, 
-    offset: int = None, 
-    filters: str = None, 
-    db: Session = Depends(get_db)
+    {%- if read_login_required %}{{ '\n\t' }}current_user: Annotated[User, Depends(get_current_user)], {%- endif %}
+    db: Annotated[Session, Depends(get_db)],
+    params: Annotated[GetListParams, Depends(get_list_params)],
 ):
     try:
-        query = select({{ model.__name__ }})
-        if filters:
-            filters_dict = {}
-            filter_exc = HTTPException(status_code=400, detail='Invalid filter parameter')
-            try:
-                filters_dict = json.loads(filters)
-                if not isinstance(filters_dict, dict):
-                    raise filter_exc
-            except Exception:
-                raise filter_exc
-            for key, value in filters_dict.items():
-                if key not in {{ model.__name__ }}.model_fields:
-                    continue
-                column = getattr({{ model.__name__ }}, key)
-                query = query.where(column == value)
-
-        count_query = select(func.count()).select_from(query.subquery())
-        total = db.exec(count_query).first() or 0
-
-        if order_field is not None:
-            if order_field not in {{ model.__name__ }}.model_fields:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f'{order_field} is not a valid field'
-                )
-            if order_by == 'asc':
-                query = query.order_by(asc(getattr({{ model.__name__ }}, order_field)))
-            else:
-                query = query.order_by(desc(getattr({{ model.__name__ }}, order_field)))
-        if offset is not None:
-            query = query.offset(offset)
-
-        if limit is not None:
-            query = query.limit(limit)
-
-        {{ model.__name__.lower() }}s = db.exec(query).all()
-        {{ model.__name__.lower() }}s = [{{ model.__name__ }}Response(**d.model_dump()) for d in {{ model.__name__.lower() }}s]
-        return {{ model.__name__ }}ListResponse(total=total, data={{ model.__name__.lower() }}s)
+        total, results = queryutil.get_list(db, {{ model.__name__ }}, params)
+        data = [{{ model.__name__ }}Response(**r.model_dump()) for r in results]
+        return {{ model.__name__ }}ListResponse(total=total, data=data)
     except HTTPException as ex:
         raise ex
     except Exception as ex:
-        raise HTTPException(status_code=500, detail=str(ex))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(ex)
+        ) from ex
 
 
 @router.get('/{{  route_name }}/{id}', response_model={{ model.__name__ }}Response, tags=['{{ model.__name__ }}'])
 async def get_{{ model.__name__.lower() }}(
-    {%- if read_login_required %}{{ '\n\t' }}current_user: typing.Annotated[User, Depends(get_current_user)], {% endif %} 
-    id: int, 
-    db: Session = Depends(get_db)
+    {%- if read_login_required %}{{ '\n\t' }}current_user: Annotated[User, Depends(get_current_user)], {%- endif %}
+    db: Annotated[Session, Depends(get_db)],
+    id: int,
 ):
     try:
-        query = select({{ model.__name__ }}).where({{ model.__name__ }}.id == id)
-        {{ model.__name__.lower() }} = db.exec(query).first()
-        if not {{ model.__name__.lower() }}:
-            raise HTTPException(status_code=404, detail='{{ model.__name__ }} not found')
-        return {{ model.__name__.lower() }}
+        result = queryutil.get_one(db, {{ model.__name__ }}, id)
+        return result
+    except HTTPException as ex:
+        raise ex
     except Exception as ex:
-        raise HTTPException(status_code=500, detail=str(ex))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(ex)
+        ) from ex
 
 
 @router.patch('/{{  route_name }}/{id}', response_model={{ model.__name__ }}Response, tags=['{{ model.__name__ }}'])
 async def update_{{ model.__name__.lower() }}(
-    id: int, 
-    data: {{ model.__name__ }}Update, 
-    {%- if update_login_required %}{{ '\n\t' }}current_user: typing.Annotated[User, Depends(get_current_user)], {% endif %} 
-    db: Session = Depends(get_db)
+    {%- if update_login_required %}{{ '\n\t' }}current_user: Annotated[User, Depends(get_current_user)], {%- endif %}
+    db: Annotated[Session, Depends(get_db)],
+    id: int,
+    data: {{ model.__name__ }}Update,
 ):
     try:
-        query = select({{ model.__name__ }}).where({{ model.__name__ }}.id == id)
-        {{ model.__name__.lower() }} = db.exec(query).first()
-        if not {{ model.__name__.lower() }}:
-            raise HTTPException(
-                status_code=404,
-                detail='{{ model.__name__ }} not found'
-            )
-            {{ '' }}
-
-        {%- for field in model.model_fields %}
-            {%- if model.model_fields[field] | getattr('unique', None) == True %}
-        if db.exec(select({{ model.__name__ }}).where({{ model.__name__ }}.{{ field }} == data.{{ field }}).where({{ model.__name__ }}.id != {{ model.__name__.lower() }}.id)).first():
-            raise HTTPException(
-                status_code=400,
-                detail=f'{{ model.__name__ }} with {{ field }} of {data.{{ field }}} already exists'
-            )
-            {% endif %}
-        {%- endfor %}
-        data_dict = data.model_dump()
-        for field in data_dict:
-            if hasattr({{ model.__name__.lower() }}, field) and data_dict[field]:
-                setattr({{ model.__name__.lower() }}, field, data_dict[field])
-        
-        db.add({{ model.__name__.lower() }})
-        db.commit()
-        db.refresh({{ model.__name__.lower() }})
-        return {{ model.__name__.lower() }}
+        obj = {{ model.__name__ }}(id=id, **data.model_dump())
+        result = queryutil.update_one(db, obj)
+        return result
     except HTTPException as ex:
         raise ex
     except Exception as ex:
-        raise HTTPException(status_code=500, detail=str(ex))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(ex)
+        ) from ex
 
 
 @router.delete('/{{  route_name }}/{id}', response_model=ActionResponse, tags=['{{ model.__name__ }}'])
 async def delete_{{ model.__name__.lower() }}(
-    id: int, 
-    {%- if delete_login_required %}{{ '\n\t' }}current_user: typing.Annotated[User, Depends(get_current_user)], {% endif %} 
-    db: Session = Depends(get_db)
+    {%- if delete_login_required %}{{ '\n\t' }}current_user: Annotated[User, Depends(get_current_user)], {%- endif %}
+    db: Annotated[Session, Depends(get_db)],
+    id: int,
 ):
     try:
-        query = select({{ model.__name__ }}).where({{ model.__name__ }}.id == id)
-        {{ model.__name__.lower() }} = db.exec(query).first()
-        if not {{ model.__name__.lower() }}:
-            raise HTTPException(status_code=404, detail='{{ model.__name__ }} not found')
-        db.delete({{ model.__name__.lower() }})
-        db.commit()
+        queryutil.delete_one(db, {{ model.__name__ }}, id)
         return ActionResponse(
             success=True,
-            message=f'{{ model.__name__ }} deleted successfully'
+            message='Application Setting deleted successfully'
         )
     except HTTPException as ex:
         raise ex
     except Exception as ex:
-        raise HTTPException(status_code=500, detail=str(ex))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(ex)
+        ) from ex
 

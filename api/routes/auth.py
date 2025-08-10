@@ -1,19 +1,21 @@
-from fastapi import APIRouter, HTTPException, Header, Depends, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from sqlmodel import Session, select
-from itsdangerous import URLSafeTimedSerializer
-from passlib.context import CryptContext
-from typing import Annotated, Optional
-from pydantic import BaseModel
-import bcrypt
+from typing import Annotated
 
-from models.application_setting import ApplicationSetting
-from models.template import Template
-from models.user import User
+import bcrypt
 from constants import ApplicationSettings, VerificationMethod
 from database import get_db
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from itsdangerous import URLSafeTimedSerializer
+from models.application_setting import ApplicationSetting
+from models.role_access_control import RoleAccessControl
+from models.template import Template
+from models.user import User
+from passlib.context import CryptContext
+from pydantic import BaseModel
 from settings import settings
-from utils import notificationutil, emailutil
+from sqlmodel import Session, select
+
+from .utils import emailutil, notificationutil
 
 
 router = APIRouter()
@@ -25,60 +27,100 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
+
+def can_access(db: Session, resource: str, action: str, role: str):
+    q = select(RoleAccessControl).where(RoleAccessControl.role == role)
+    result = db.exec(q).first()
+    
+    if not result:
+        return True
+    
+    # Permission format: <resource>.<action>
+    for permission in result.permissions:
+        if permission == '*':
+            return True
+
+        p_resource = permission.split('.')[0]
+        p_action = permission.split('.')[1]
+
+        if p_resource in [resource, '*'] and p_action in [action, '*']:
+            return True
+    
+    return False
+
+
 async def get_current_user(
-    api_key: Annotated[Optional[str], Header()] = None,
-    token: Annotated[Optional[str], Depends(oauth2_scheme)] = None,
-    db: Session = Depends(get_db)
+    request: Request,
+    api_key: Annotated[str | None, Header()] = None,
+    token: Annotated[str | None, Depends(oauth2_scheme)] = None,
 ):
+    db: Session = next(get_db())
     user = None
     if api_key:
         try:
             user =  await get_user_by_api_key(db, api_key)
         except HTTPException as e:
-            print(f"API Key authentication failed: {str(e)}")
+            print(f'API Key authentication failed: {str(e)}')
             pass
 
     if token:
         try:
             user = await get_user_by_jwt_token(db, token)
         except HTTPException as e:
-            print(f"Token authentication failed: {str(e)}")
-            pass 
+            print(f'Token authentication failed: {str(e)}')
+            pass
 
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required"
+            detail='Authentication required'
         )
     
     if not user.verified:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not verified"
+            detail='User not verified'
         )
     
+    action_map = {
+        'POST': 'create',
+        'GET': 'read',
+        'PATCH': 'update',
+        'PUT': 'update',
+        'DELETE': 'delete',
+    }
+    resource = request.url.path.split('/')[1]
+    action = action_map.get(request.method, '')
+    if not can_access(db, resource, action, user.role):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='No access to resource'
+        )
+
     return user
 
+
 async def get_user_by_api_key(
-    db: Session = Depends(get_db), 
-    api_key: Annotated[Optional[str], Header()] = None
+    db: Session,
+    api_key: Annotated[str | None, Header()] = None
 ):
     if api_key is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="API key missing"
+            detail='API key missing'
         )
     user = db.exec(select(User).where(User.api == api_key)).first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid API key"
+            detail='Invalid API key'
         )
     return user
 
+
 async def get_user_by_jwt_token(
-    db: Annotated[Session, Depends(get_db)], 
-    token: Annotated[str, Depends(oauth2_scheme)] = ""
+    db: Session,
+    token: Annotated[str, Depends(oauth2_scheme)] = ''
 ):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -91,12 +133,13 @@ async def get_user_by_jwt_token(
         username: str = payload.get('sub')
         if username is None:
             raise credentials_exception
-    except Exception:
-        raise credentials_exception
+    except Exception as ex:
+        raise credentials_exception from ex
     user = db.exec(select(User).where(User.email == username)).first()
     if user is None:
         raise credentials_exception
     return user
+
 
 def authenticate_user(username: str, password: str, db: Session):
     query = select(User).where(User.email == username)
@@ -106,6 +149,7 @@ def authenticate_user(username: str, password: str, db: Session):
     if not pwd_context.verify(password, user.password):
         return None
     return user
+
 
 def create_access_token(data: dict, salt: str | bytes | None = None):
     serializer = URLSafeTimedSerializer(settings.SECRET_KEY)
@@ -128,18 +172,18 @@ class ActionResponse(BaseModel):
 @router.post('/auth/register', tags=['Authentication'])
 async def register_user(
     data: RegisterForm,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ) -> Token:
     if data.password != data.confirm_password:
         raise HTTPException(
-            status_code=400, 
+            status_code=400,
             detail='Passwords do not match'
         )
 
     existing_user = db.exec(select(User).where(User.email == data.email)).first()
     if existing_user:
         raise HTTPException(
-            status_code=400, 
+            status_code=400,
             detail='Email/Username already registered'
         )
 
@@ -155,7 +199,7 @@ async def register_user(
 
     new_user = User(
         name=data.name,
-        email=data.email, 
+        email=data.email,
         password=hashed_password,
         verified=True if verification_setting.value == VerificationMethod.NONE else False
     )
@@ -214,10 +258,11 @@ async def register_user(
 
     return Token(access_token=access_token, token_type='bearer')
 
+
 @router.post('/auth/login', tags=['Authentication'])
 async def login_user(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ) -> Token:
     user = authenticate_user(form_data.username, form_data.password, db)
     if not user:
@@ -228,8 +273,12 @@ async def login_user(
     access_token = create_access_token(data={'sub': user.email}, salt='user-auth')
     return Token(access_token=access_token, token_type='bearer')
 
+
 @router.get('/auth/verify_email', response_model=ActionResponse, tags=['Authentication'])
-async def verify_email(token: str, db: Session = Depends(get_db)):
+async def verify_email(
+    token: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail='Could not validate credentials',
@@ -242,8 +291,8 @@ async def verify_email(token: str, db: Session = Depends(get_db)):
         username: str = payload.get('sub')
         if username is None:
             raise credentials_exception
-    except Exception:
-        raise credentials_exception
+    except Exception as ex:
+        raise credentials_exception from ex
     
     user = db.exec(select(User).where(User.email == username)).first()
     if user is None:

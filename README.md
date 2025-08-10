@@ -12,35 +12,44 @@ A full-stack web application template featuring:
 
 ---
 
+## ⚒️ Dependencies
+
+- Docker
+- [uv (uv)](https://docs.astral.sh/uv/)
+
+---
+
 ## 🚀 Quick Start
 
 ### 1. Copy the Template
 
 Clone or copy this repository into your project directory.
 
-### 2. Generate Environment Config File
+### 2. Bootstrap the application
 
-Run the following command to generate an `.env` file for your app:
+Run the following command to generate the required files for your app:
 
 ```bash
-python tools/manage.py generate-env <app_name>
+uv run tools/setup.py bootstrap <app_name>
 ```
 
 ### 3. Populate the `.env` File
 
 Open the generated .env file and fill in any missing or required values, such as database credentials, secrets, ports, etc.
 
-### 4. Generate Docker Compose File
+### 4. Start containers
 
-After setting up your environment file, generate the `docker-compose.yaml` file:
+Use either `dev` or `prod` profiles to start containers:
 
 ```bash
-python tools/manage.py generate-compose-file <app_name>
+docker compose --profile <profile> up -d --remove-orphans
 ```
 
-Replace <app_name> with the same name you used in step 2.
+### 5. Run initial migration
 
----
+```bash
+docker compose exec api make run-migration
+```
 
 ## 🧩 Development
 
@@ -49,15 +58,15 @@ Replace <app_name> with the same name you used in step 2.
 After defining custom model in `api/models/`, generate and migrate with alembic:
 
 ```bash
-python tools\manage.py generate-model-route <model_name>
+docker compose exec api make create-migration MESSAGE="$message"
 ```
 
-### Autogenerate API endpoint
+### Generate API endpoint
 
 After defining custom model in `api/models/`, bootstrap api endpoint with:
 
 ```bash
-python tools\manage.py generate-model-route <model_name>
+uv run tools/workflow.py generate-model-route <model_name>
 ```
 
 To add authentication to each CRUD operation:
@@ -67,14 +76,33 @@ To add authentication to each CRUD operation:
 - `--update-login-required`: Require login for UPDATE route
 - `--delete-login-required`: Require login for DELETE route
 
----
+### Generate model factory
 
-## ⚒️ Additional Notes
+After defining custom model in `api/models/`, bootstrap model factory with:
 
-- All configurations are environment-specific and customizable.
-- The generated docker-compose.yaml will be tailored to your environment variables.
-- Alembic migration setup is included and works with SQLModel.
-- Caddy is configured for automatic TLS and reverse proxying to your FastAPI backend.
+```bash
+uv run tools/workflow.py generate-model-factory <model_name>
+```
+
+### Seeding database from factory
+
+Update factory file with defined custom list or override the random generator function.
+
+After updating the factory file, run seeder with:
+
+```bash
+docker compose exec api uv run database/seeder.py seed-<mode>
+
+modes:
+    - random    # calls factory.random_generator
+    - list      # calls factory.list_generator
+
+Options:
+  -n, --num     INTEGER     Seed n number of models
+  --force                   Force save data if table has data
+  --only        TEXT        Only seed specific models
+  --help                    Show this message and exit.
+```
 
 ---
 
@@ -82,10 +110,10 @@ To add authentication to each CRUD operation:
 
 ```
 .
-├── backend/              # FastAPI backend code
-├── web/                  # React Admin frontend
+├── api/                  # FastAPI backend code
+├── provision/            # Provision files
 ├── tools/                # Management and setup scripts
-├── docker/               # Docker-related files (Dockerfiles, Caddy configs)
+├── web/                  # React Admin frontend
 ├── .env                  # Generated environment config
 ├── docker-compose.yaml   # Generated docker compose config
 

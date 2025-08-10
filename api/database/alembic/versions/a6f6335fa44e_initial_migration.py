@@ -1,3 +1,5 @@
+# pyright: reportAttributeAccessIssue=false
+
 """Initial migration
 
 Revision ID: a6f6335fa44e
@@ -45,6 +47,18 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(['modified_by_id'], ['users.id'], ),
         sa.PrimaryKeyConstraint('id'),
         sa.UniqueConstraint('name')
+    )
+
+    role_access_control_table = op.create_table('role_access_control',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('modified_by_id', sa.Integer(), nullable=False),
+        sa.Column('role', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+        sa.Column('permissions', sa.JSON(), nullable=True),
+        sa.Column('created_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
+        sa.Column('updated_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False, onupdate=sa.text('CURRENT_TIMESTAMP')),
+        sa.ForeignKeyConstraint(['modified_by_id'], ['users.id'], ),
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('role')
     )
 
     templates_table = op.create_table('templates',
@@ -122,6 +136,16 @@ def upgrade() -> None:
                 'value': '',
                 'modified_by_id': 1
             },
+        ]
+    )
+
+    op.bulk_insert(
+        role_access_control_table, [
+            {
+                'modified_by_id': 1,
+                'role': 'admin',
+                'permissions': ["*"]
+            }
         ]
     )
 

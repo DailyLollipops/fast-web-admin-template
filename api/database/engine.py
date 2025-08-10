@@ -1,6 +1,7 @@
 from redis import Redis
-from sqlmodel import SQLModel, create_engine, Session
 from settings import settings
+from sqlmodel import Session, SQLModel, create_engine
+
 
 engine = create_engine(settings.DATABASE_URL, echo=True)
 
@@ -14,8 +15,8 @@ def get_db():
 
 def get_redis():
     client = Redis(
-        host=settings.REDIS_HOST, 
-        port=settings.REDIS_PORT, 
+        host=settings.REDIS_HOST,
+        port=settings.REDIS_PORT,
         db=0
     )
     try:

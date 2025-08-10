@@ -1,9 +1,10 @@
-from sqlmodel import select
-import click
+# pyright: reportCallIssue=false
 import re
 
-from database import get_db
-import factory
+import click
+from database import factory
+from database.engine import get_db
+from sqlmodel import select
 
 
 def snake_to_pascal(s: str) -> str:
@@ -17,9 +18,9 @@ def cli():
 
 @click.command
 @click.option('-n', '--num', default=1, help='Seed n number of models')
-@click.option('--no-override', is_flag=True, default=True, help='Dont save if table has data')
+@click.option('--force', is_flag=True, default=False, help='Force save data if table has data')
 @click.option('--only', multiple=True, help='Only seed specific models')
-def seed_random(num: int, no_override: bool, only: tuple[str]):
+def seed_random(num: int, force: bool, only: tuple[str] | None = None):
     if only:
         factories: list[factory.BaseFactory] = [
             getattr(factory, f'{snake_to_pascal(f)}Factory')
@@ -27,8 +28,8 @@ def seed_random(num: int, no_override: bool, only: tuple[str]):
         ]
     else:
         factories: list[factory.BaseFactory] = [
-            getattr(factory, f) 
-            for f in factory.__all__ 
+            getattr(factory, f)
+            for f in factory.__all__
             if re.search(r'^(?!Base).+Factory$', f)
         ]
 
@@ -37,9 +38,9 @@ def seed_random(num: int, no_override: bool, only: tuple[str]):
     for f in factories:
         instances = f().make(num)
         print(f'Generated {len(instances)} instances from {f}')
-        if instances and no_override:
+        if instances and not force:
             if db.exec(select(instances[0].__class__)).first():
-                print('Table has populated data and --no-override is set. Skipping seeding...')
+                print('Table has populated data and --force is not set. Skipping seeding...')
                 continue
         all_instances.extend(instances)
 
@@ -50,9 +51,9 @@ def seed_random(num: int, no_override: bool, only: tuple[str]):
 
 @click.command
 @click.option('-n', '--num', default=None, help='Seed n number of models')
-@click.option('--no-override', is_flag=True, default=True, help='Dont save if table has data')
+@click.option('--force', is_flag=True, default=False, help='Force save data if table has data')
 @click.option('--only', multiple=True, help='Only seed specific models')
-def seed_list(num: int, no_override: bool, only: tuple[str]):
+def seed_list(num: int, force: bool, only: tuple[str] | None = None):
     if only:
         factories: list[factory.BaseFactory] = [
             getattr(factory, f'{snake_to_pascal(f)}Factory')
@@ -60,8 +61,8 @@ def seed_list(num: int, no_override: bool, only: tuple[str]):
         ]
     else:
         factories: list[factory.BaseFactory] = [
-            getattr(factory, f) 
-            for f in factory.__all__ 
+            getattr(factory, f)
+            for f in factory.__all__
             if re.search(r'^(?!Base).+Factory$', f)
         ]
     
@@ -70,9 +71,9 @@ def seed_list(num: int, no_override: bool, only: tuple[str]):
     for f in factories:
         instances = f().make_from_list(num)
         print(f'Generated {len(instances)} instances from {f}')
-        if instances and no_override:
+        if instances and not force:
             if db.exec(select(instances[0].__class__)).first():
-                print('Table has populated data and --no-override is set. Skipping seeding...')
+                print('Table has populated data and --force is not set. Skipping seeding...')
                 continue
         all_instances.extend(instances)
     

@@ -5,11 +5,8 @@ web/build
 .venv
 .vscode
 supervisord.pid
-
-# Generated Files
 .env
-docker-compose.yml
-Caddyfile.conf
+.ruff_cache
 
 # Logs
 *.log

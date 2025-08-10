@@ -1,5 +1,5 @@
 {{ domain }} {
-    reverse_proxy /api/* {{ app_name }}-api:8000
-    reverse_proxy {{ app_name }}-web:5173
+    reverse_proxy /api/* api:8000
+    reverse_proxy web:5173
 }
 

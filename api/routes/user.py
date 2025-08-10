@@ -1,21 +1,22 @@
-from fastapi import APIRouter, HTTPException, Depends, status
-from sqlmodel import Session, select, delete, asc, desc, func
-from sqlalchemy import or_
 from enum import Enum
-from typing import Annotated, Optional, List
-from pydantic import BaseModel
-import bcrypt
-import json
+from typing import Annotated
 
-from models.user import User
-from models.notification import Notification
+import bcrypt
 from database import get_db
-from utils import notificationutil
+from fastapi import APIRouter, Depends, HTTPException, status
+from models.notification import Notification
+from models.user import User
+from pydantic import BaseModel
+from sqlalchemy import or_
+from sqlmodel import Session, delete
+
 from .auth import get_current_user
+from .utils import queryutil
+from .utils.queryutil import GetListParams, get_list_params
 
 
 router = APIRouter()
-
+TAGS: list[str | Enum] = ['User']
 
 class UserRole(str, Enum):
     admin = 'admin'
@@ -31,259 +32,126 @@ class UserCreate(BaseModel):
     email: str
     password: str
     name: str
-    role: Optional[str] = 'user'
-    verified: Optional[bool] = False
+    role: str | None = 'user'
+    verified: bool | None = False
 
 
 class UserResponse(BaseModel):
     id: int
-    email: str 
-    role: str 
+    email: str
+    role: str
     name: str
 
 
 class UserListResponse(BaseModel):
     total: int
-    data: List[UserResponse]
+    data: list[UserResponse]
 
 
-@router.post('/users', response_model=UserResponse, tags=['User'])
+class UserUpdate(BaseModel):
+    email: str | None = None
+    password: str | None = None
+    name: str | None = None
+    role: str | None = 'user'
+    verified: bool | None = False
+
+
+@router.post('/users', response_model=UserResponse, tags=TAGS)
 async def create_user(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
     data: UserCreate,
-    current_user: Annotated[User, Depends(get_current_user)],
-    db: Session = Depends(get_db)
 ):
-    """
-    Create a new user.
-    Requires `admin` role
-    """
-    if current_user.role != UserRole.admin:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='No access to resource',
-            headers={'WWW-Authenticate': 'Bearer'},
-        )
-    existing_user = db.exec(select(User).where(User.email == data.email)).first()
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail='Email/Username already registered',
-        )
-    
-    data.password = bcrypt.hashpw(data.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-
-    new_user = User(**data.model_dump())
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return new_user
-
-
-@router.get('/users', response_model=UserListResponse, tags=['User'])
-async def get_users(
-    current_user: Annotated[User, Depends(get_current_user)],
-    order_field: str = 'id', 
-    order_by: str = 'desc', 
-    limit: Optional[int] = None, 
-    offset: Optional[int] = None, 
-    filters: Optional[str] = None, 
-    db: Session = Depends(get_db),
-):
-    """
-    Get all users with limited information.
-    Requires `admin` role
-    """
-    if current_user.role != UserRole.admin:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='No access to resource',
-            headers={'WWW-Authenticate': 'Bearer'},
-        )
-
     try:
-        query = select(User)
-        if filters:
-            filters_dict = {}
-            filter_exc = HTTPException(status_code=400, detail='Invalid filter parameter')
-            try:
-                filters_dict = json.loads(filters)
-                if not isinstance(filters_dict, dict):
-                    raise filter_exc
-            except Exception:
-                raise filter_exc
-            for key, value in filters_dict.items():
-                if key not in User.model_fields:
-                    continue
-                column = getattr(User, key)
-                query = query.where(column == value)
-
-        if order_field is not None:
-            if order_field not in User.model_fields:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f'{order_field} is not a valid field'
-                )
-            if order_by == 'asc':
-                query = query.order_by(asc(getattr(User, order_field)))
-            else:
-                query = query.order_by(desc(getattr(User, order_field)))
-
-        count_query = select(func.count()).select_from(query.subquery())
-        total = db.exec(count_query).first() or 0
-
-        if offset is not None:
-            query = query.offset(offset)
-
-        if limit is not None:
-            query = query.limit(limit)
-
-        users = db.exec(query).all()
-        users = [UserResponse(**d.model_dump()) for d in users]
-        return UserListResponse(total=total, data=users)
+        data.password = bcrypt.hashpw(data.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        obj = User(**data.model_dump())
+        result = queryutil.create_one(db, obj)
+        return result
     except HTTPException as ex:
         raise ex
     except Exception as ex:
-        raise HTTPException(status_code=500, detail=str(ex))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(ex)
+        ) from ex
 
 
-@router.get('/users/{id}', response_model=UserResponse, tags=['User'])
+@router.get('/users', response_model=UserListResponse, tags=TAGS)
+async def get_users(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+    params: Annotated[GetListParams, Depends(get_list_params)],
+):
+    try:
+        total, results = queryutil.get_list(db, User, params)
+        data = [UserResponse(**r.model_dump()) for r in results]
+        return UserListResponse(total=total, data=data)
+    except HTTPException as ex:
+        raise ex
+    except Exception as ex:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(ex)
+        ) from ex
+
+
+@router.get('/users/{id}', response_model=UserResponse, tags=TAGS)
 async def get_user(
-    id: str,
     current_user: Annotated[User, Depends(get_current_user)],
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
+    id: int,
 ):
-    """
-    Get user info.
-    Requires `admin` role
-    """
-    if not id.isnumeric():
+    try:
+        result = queryutil.get_one(db, User, id)
+        return result
+    except HTTPException as ex:
+        raise ex
+    except Exception as ex:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail='Id must be numeric',
-        )
-    if current_user.role != UserRole.admin:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='No access to resource',
-            headers={'WWW-Authenticate': 'Bearer'},
-        )
-    user = db.exec(select(User).where(User.id == int(id))).first()
-    return user
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(ex)
+        ) from ex
 
 
-@router.patch("/users/verify/{id}", response_model=UserResponse, tags=['User'])
-async def verify_user(
-    id: int, 
-    current_user: Annotated[User, Depends(get_current_user)],
-    db: Session = Depends(get_db),
+@router.patch('/users/{id}', response_model=UserResponse, tags=TAGS)
+def update_user(
+	current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+    id: int,
+    data: UserUpdate,
 ):
-    """
-    Verify user to be able to use application
-    """
-    if current_user.role != UserRole.admin:
-        raise HTTPException(status_code=401, detail='No access to resource')
-    
-    query = select(User).where(User.id == id)
-    user = db.exec(query).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    user.verified = True
-
-    db.add(user)
-    db.commit()
-
-    notificationutil.notify_role(
-        db=db,
-        triggered_by=current_user.id,
-        roles=['admin'],
-        title='User has been verified',
-        body=f'User ID {user.id} has been verified.'
-    )
-
-    return user
-
-
-@router.patch('/users/role/{id}', response_model=UserResponse, tags=['User'])
-async def update_user_role(
-    id: str,
-    role: UserRole,
-    current_user: Annotated[User, Depends(get_current_user)],
-    db: Session = Depends(get_db),
-):
-    """
-    Update user role.
-    Requires `admin` role
-    """
-    if role not in UserRole:
+    try:
+        if data.password:
+            data.password = bcrypt.hashpw(
+                data.password.encode('utf-8'),
+                bcrypt.gensalt()
+            ).decode('utf-8')
+        obj = User(id=id, **data.model_dump())
+        result = queryutil.update_one(db, obj)
+        return result
+    except HTTPException as ex:
+        raise ex
+    except Exception as ex:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail='Invalid role',
-        )
-    
-    if current_user.role != UserRole.admin:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='No access to resource',
-            headers={'WWW-Authenticate': 'Bearer'},
-        )
-    
-    user = db.exec(select(User).where(User.id == int(id))).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail='User not found',
-        )
-
-    user.role = role
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-
-    return user
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(ex)
+        ) from ex
 
 
-@router.delete('/users/{id}', tags=['User'])
+@router.delete('/users/{id}', tags=TAGS)
 async def delete_user(
-    id: str,
     current_user: Annotated[User, Depends(get_current_user)],
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
+    id: str,
 ):
-    """
-    Delete user.
-    Requires `admin` role
-    """
-    if not id.isnumeric():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail='Id must be numeric',
-        )
-    if current_user.role != UserRole.admin:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='No access to resource',
-            headers={'WWW-Authenticate': 'Bearer'},
-        )
-    user = db.exec(select(User).where(User.id == int(id))).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail='User not found',
-        )
-    if user.role == UserRole.admin:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail='Cannot delete user with admin role',
-        )
-
     query = delete(Notification).where(
         or_(
-            Notification.user_id == user.id, # type: ignore
-            Notification.triggered_by == user.id # type: ignore
+            Notification.user_id == current_user.id, # type: ignore
+            Notification.triggered_by == current_user.id # type: ignore
         )
     )
-
     db.exec(query) # type: ignore
-    db.delete(user)
+    db.delete(current_user)
     db.commit()
 
     return ActionResponse(
@@ -292,9 +160,9 @@ async def delete_user(
     )
 
 
-@router.get('/me', response_model=UserResponse, tags=['User'])
+@router.get('/me', response_model=UserResponse, tags=TAGS)
 async def me(
     current_user: Annotated[User, Depends(get_current_user)],
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ):
     return current_user

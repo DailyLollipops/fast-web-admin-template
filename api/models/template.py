@@ -1,8 +1,12 @@
-from sqlmodel import SQLModel, Field, Relationship
+# pyright: reportAssignmentType=false
+# pyright: reportUndefinedVariable=false
 from datetime import datetime
 
+from sqlmodel import Field, Relationship, SQLModel
+
+
 class Template(SQLModel, table=True):
-    __tablename__ = 'templates' # type: ignore
+    __tablename__ = 'templates'
 
     id: int = Field(default=None, primary_key=True)
     name: str = Field(unique=True)
@@ -10,9 +14,9 @@ class Template(SQLModel, table=True):
     path: str = Field()
     created_at: datetime = Field(default_factory=lambda: datetime.now())
     updated_at: datetime = Field(
-        default_factory=lambda: datetime.now(), 
+        default_factory=lambda: datetime.now(),
         sa_column_kwargs={'onupdate': lambda: datetime.now()}
     )
     modified_by_id: int = Field(foreign_key='users.id')
 
-    modified_by: 'User' = Relationship(sa_relationship_kwargs={"lazy": "joined"}) # type: ignore  # noqa: F821
+    modified_by: 'User' = Relationship(sa_relationship_kwargs={"lazy": "joined"})  # noqa: F821

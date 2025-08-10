@@ -1,13 +1,17 @@
-from .base import BaseFactory
 from models.{{ module }} import {{ model.__name__ }}
+
+from .base import BaseFactory
+
 
 class {{ model.__name__ }}Factory(BaseFactory):
     def __init__(self):
         super().__init__({{ model.__name__ }})
 
-    # You can also implement your own random list_generator
-    # def random_generator(self) -> dict:
-    #     pass
+    def random_generator(self) -> dict:
+        """
+        Override to implement own random generator
+        """
+        return super().random_generator()
 
     def list_generator(self):
         """

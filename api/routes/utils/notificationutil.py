@@ -1,16 +1,14 @@
-from sqlmodel import Session, select, insert, literal
-from typing import List
-from settings import settings
-
-from models.user import User
-from models.notification import Notification
-from models.application_setting import ApplicationSetting
 from constants import ApplicationSettings
+from models.application_setting import ApplicationSetting
+from models.notification import Notification
+from models.user import User
+from sqlmodel import Session, insert, literal, select
+
 
 def notify_role(
     db: Session,
     triggered_by: int,
-    roles: List[str],
+    roles: list[str],
     title: str,
     body: str
 ):
@@ -25,7 +23,7 @@ def notify_role(
     if notification_enabled != '1':
         return
 
-    subquery = select(User.id).where(User.role.in_(roles))
+    subquery = select(User.id).where(User.role.in_(roles)) # type: ignore
     statement = (
         insert(Notification)
         .from_select(
@@ -34,7 +32,7 @@ def notify_role(
                 Notification.triggered_by,
                 Notification.title,
                 Notification.body,
-            ],
+            ], # type: ignore
             select(
                 subquery.c.id,
                 triggered_by,
@@ -43,7 +41,7 @@ def notify_role(
             )
         )
     )
-    db.exec(statement)
+    db.exec(statement) # type: ignore
     db.commit()
 
 def notify_user(

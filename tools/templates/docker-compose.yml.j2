@@ -1,5 +1,24 @@
 name: "{{ app_name }}"
 
+x-custom:
+  python-env: &python-env
+    PYTHONPATH: /workspace:/workspace/app
+    PYTHONDONTWRITEBYTECODE: 1
+    PYTHONUNBUFFERED: 1
+  mysql-env: &mysql-env
+    MYSQL_HOST: ${MYSQL_HOST:-mysql}
+    MYSQL_PORT: ${MYSQL_PORT:-3306}
+    MYSQL_DATABASE: ${MYSQL_DATABASE:-{{ app_name }}}
+    MYSQL_USER: ${MYSQL_USER:-user}
+    MYSQL_PASSWORD: ${MYSQL_PASSWORD:-password}
+    DATABASE_URL: mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}
+  redis-env: &redis-env
+    REDIS_HOST: ${REDIS_HOST:-redis}
+    REDIS_PORT: ${REDIS_PORT:-6379}
+  web-env: &web-env
+    VITE_BASE_API_URL: ${VITE_BASE_API_URL:-/api}
+    VITE_APP_NAME: ${VITE_APP_NAME:-{{ app_name }}}
+
 services:
   mysql:
     image: mysql:8.0
@@ -24,59 +43,44 @@ services:
 
   api:
     build:
-      context: ./api
-      dockerfile: Dockerfile
+      target: api
     ports:
       - 8000:8000
     volumes:
-      - ./api:/app
-    command: 
-      - /app/api_init.sh
+      - ./api:/workspace/app
+    command: uv run fastapi dev /workspace/app/main.py --host 0.0.0.0 --port 8000
     depends_on:
       - mysql
       - redis
     networks:
       - app_network
     environment:
-      - PYTHONPATH=/app
-      - PYTHONDONTWRITEBYTECODE=1
-      - PYTHONUNBUFFERED=1
-      - MYSQL_HOST=${MYSQL_HOST}
-      - MYSQL_PORT=${MYSQL_PORT}
-      - MYSQL_DATABASE=${MYSQL_DATABASE}
-      - MYSQL_USER=${MYSQL_USER}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
-      - DATABASE_URL=mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}
-      - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PORT=${REDIS_PORT}
-      - APP_ENV=${APP_ENV}
-      - SECRET_KEY=${SECRET_KEY}
+      <<:
+        - *python-env
+        - *mysql-env
+        - *redis-env
+      SECRET_KEY: ${SECRET_KEY}
+    profiles:
+      - dev
 
   web:
     build:
-      context: ./web
-      dockerfile: Dockerfile
-      args:
-        APP_ENV: ${APP_ENV}
-        VITE_BASE_API_URL: ${VITE_BASE_API_URL}
-        VITE_APP_NAME: ${VITE_APP_NAME}
+      target: web
     ports:
       - 3000:3000
     volumes:
       - ./web:/app
       - /app/node_modules
       - /app/build
-    command: 
-      - /bin/sh
-      - /app/web_init.sh
+    command: npm run dev
     depends_on:
       - api
     networks:
       - app_network
     environment:
-      - APP_ENV=${APP_ENV}
-      - VITE_BASE_API_URL=${VITE_BASE_API_URL}
-      - VITE_APP_NAME=${VITE_APP_NAME}
+      <<: *web-env
+    profiles:
+      - dev
 
   caddy:
     image: caddy:latest
@@ -84,7 +88,7 @@ services:
       - 80:80
       - 443:443
     volumes:
-      - ./Caddyfile.conf:/etc/caddy/Caddyfile
+      - ./Caddyfile.local:/etc/caddy/Caddyfile
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
@@ -92,6 +96,66 @@ services:
       - api
     networks:
       - app_network
+    profiles:
+      - dev
+
+  pr-api:
+    build:
+      target: api
+    ports:
+      - 8000:8000
+    volumes:
+      - ./api:/workspace/app
+    command: uv run fastapi run /workspace/app/main.py --host 0.0.0.0 --port 8000
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - app_network
+    environment:
+      <<:
+        - *python-env
+        - *mysql-env
+        - *redis-env
+      SECRET_KEY: ${SECRET_KEY}
+    profiles:
+      - prod
+
+  pr-web:
+    build:
+      target: web
+    ports:
+      - 3000:3000
+    volumes:
+      - ./web:/app
+      - /app/node_modules
+      - /app/build
+    command: serve -s build
+    depends_on:
+      - pr-api
+    networks:
+      - app_network
+    environment:
+      <<: *web-env
+    profiles:
+      - prod
+
+  pr-caddy:
+    image: caddy:latest
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./Caddyfile.prod:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - pr-web
+      - pr-api
+    networks:
+      - app_network
+    profiles:
+      - prod
 
 volumes:
   mysql_data:

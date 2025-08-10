@@ -1,6 +1,9 @@
-from sqlmodel import SQLModel, Field, Relationship
+# pyright: reportAssignmentType=false
+# pyright: reportUndefinedVariable=false
 from datetime import datetime
-from typing import List
+
+from sqlmodel import Field, Relationship, SQLModel
+
 
 class User(SQLModel, table=True):
     __tablename__ = 'users' # type: ignore
@@ -14,11 +17,11 @@ class User(SQLModel, table=True):
     api: str = Field(nullable=True, default=None)
     created_at: datetime = Field(default_factory=lambda: datetime.now())
     updated_at: datetime = Field(
-        default_factory=lambda: datetime.now(), 
+        default_factory=lambda: datetime.now(),
         sa_column_kwargs={'onupdate': lambda: datetime.now()}
     )
 
-    notifications: List['Notification'] = Relationship( # type: ignore  # noqa: F821
-        back_populates='user', 
+    notifications: list['Notification'] = Relationship( # noqa: F821
+        back_populates='user',
         sa_relationship_kwargs={'cascade':'all, delete-orphan'}
-    ) 
+    )

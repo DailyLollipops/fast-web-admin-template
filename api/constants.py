@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class ApplicationSettings(str, Enum):
     NOTIFICATION_SETTING = 'notification'
     USER_VERIFICATION = 'user_verification'

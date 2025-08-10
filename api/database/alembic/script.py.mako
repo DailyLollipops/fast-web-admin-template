@@ -1,3 +1,5 @@
+# pyright: reportAttributeAccessIssue=false
+
 """${message}
 
 Revision ID: ${up_revision}

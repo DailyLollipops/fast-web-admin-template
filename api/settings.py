@@ -1,10 +1,11 @@
 from pydantic_settings import BaseSettings
 
+
 class Settings(BaseSettings):
     MYSQL_HOST: str
     MYSQL_USER: str
-    MYSQL_PASSWORD: str 
-    MYSQL_DATABASE: str 
+    MYSQL_PASSWORD: str
+    MYSQL_DATABASE: str
     DATABASE_URL: str
     REDIS_HOST: str
     REDIS_PORT: int = 6379
@@ -13,4 +14,4 @@ class Settings(BaseSettings):
     REDIS_EMAIL_CHANNEL: str = 'emails'
     PROFILE_DIRECTORY: str = 'static/profiles'
 
-settings = Settings()
+settings = Settings() # type: ignore

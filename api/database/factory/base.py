@@ -1,6 +1,8 @@
 from datetime import datetime
+
 from faker import Faker
 from sqlmodel import SQLModel
+
 
 class BaseFactory:
     def __init__(self, model: type[SQLModel]):
@@ -63,7 +65,7 @@ if __name__ == '__main__':
         longitude: float = Field(...)
         created_at: datetime = Field(default_factory=lambda: datetime.now())
         updated_at: datetime = Field(
-            default_factory=lambda: datetime.now(), 
+            default_factory=lambda: datetime.now(),
             sa_column_kwargs={'onupdate': lambda: datetime.now()}
         )
 
