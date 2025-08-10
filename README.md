@@ -33,9 +33,11 @@ Run the following command to generate the required files for your app:
 uv run tools/setup.py bootstrap <app_name>
 ```
 
-### 3. Populate the `.env` File
+### 3. Populate the generated files
 
 Open the generated .env file and fill in any missing or required values, such as database credentials, secrets, ports, etc.
+
+For prod environment, update domain in `provision/Caddyfile.prod`
 
 ### 4. Start containers
 
