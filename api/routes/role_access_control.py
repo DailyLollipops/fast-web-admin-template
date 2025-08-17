@@ -1,6 +1,5 @@
 # Generated code for RoleAccessControl model
 
-from datetime import datetime
 from enum import Enum
 from typing import Annotated
 
@@ -8,54 +7,24 @@ from database import get_db
 from database.models.role_access_control import RoleAccessControl
 from database.models.user import User
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
 from sqlmodel import Session
 
 from .auth import get_current_user
 from .utils import queryutil
+from .utils.crudutils import ActionResponse, make_crud_schemas
 from .utils.queryutil import GetListParams, get_list_params
 
 
 router = APIRouter()
 TAGS: list[str | Enum] = ['RoleAccessControl']
 
-class ActionResponse(BaseModel):
-    success: bool
-    message: str
+
+CreateSchema, UpdateSchema, ResponseSchema, ListResponseSchema = make_crud_schemas(RoleAccessControl)
+RoleAccessControlCreate = CreateSchema
+RoleAccessControlUpdate = UpdateSchema
 
 
-class RoleAccessControlCreate(BaseModel):
-    role: str
-    permissions: list[str] | None = None
-    created_at: datetime | None = None
-    updated_at: datetime | None = None
-    
-
-
-class RoleAccessControlResponse(BaseModel):
-    id: int | None = None
-    modified_by_id: int
-    role: str
-    permissions: list[str] | None = None
-    created_at: datetime | None = None
-    updated_at: datetime | None = None
-    
-
-
-class RoleAccessControlUpdate(BaseModel):
-    role: str | None = None
-    permissions: list[str] | None = None
-    created_at: datetime | None = None
-    updated_at: datetime | None = None
-    
-
-
-class RoleAccessControlListResponse(BaseModel):
-    total: int
-    data: list[RoleAccessControlResponse]
-
-
-@router.post('/role_access_controls', response_model=RoleAccessControlResponse, tags=TAGS)
+@router.post('/role_access_controls', response_model=ResponseSchema, tags=TAGS)
 async def create_roleaccesscontrol(
     data: RoleAccessControlCreate,
 	current_user: Annotated[User, Depends(get_current_user)],
@@ -74,7 +43,7 @@ async def create_roleaccesscontrol(
         ) from ex
 
 
-@router.get('/role_access_controls', response_model=RoleAccessControlListResponse, tags=['RoleAccessControl'])
+@router.get('/role_access_controls', response_model=ListResponseSchema, tags=['RoleAccessControl'])
 async def get_roleaccesscontrols(
 	current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
@@ -82,8 +51,8 @@ async def get_roleaccesscontrols(
 ):
     try:
         total, results = queryutil.get_list(db, RoleAccessControl, params)
-        data = [RoleAccessControlResponse(**r.model_dump()) for r in results]
-        return RoleAccessControlListResponse(total=total, data=data)
+        data = [ResponseSchema(**r.model_dump()) for r in results]
+        return ListResponseSchema(total=total, data=data)
     except HTTPException as ex:
         raise ex
     except Exception as ex:
@@ -93,7 +62,7 @@ async def get_roleaccesscontrols(
         ) from ex
 
 
-@router.get('/role_access_controls/{id}', response_model=RoleAccessControlResponse, tags=['RoleAccessControl'])
+@router.get('/role_access_controls/{id}', response_model=ResponseSchema, tags=['RoleAccessControl'])
 async def get_roleaccesscontrol(
 	current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
@@ -111,7 +80,7 @@ async def get_roleaccesscontrol(
         ) from ex
 
 
-@router.patch('/role_access_controls/{id}', response_model=RoleAccessControlResponse, tags=['RoleAccessControl'])
+@router.patch('/role_access_controls/{id}', response_model=ResponseSchema, tags=['RoleAccessControl'])
 async def update_roleaccesscontrol(
 	current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],

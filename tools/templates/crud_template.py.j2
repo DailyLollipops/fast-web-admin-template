@@ -1,6 +1,5 @@
 # Generated code for {{ model.__name__ }} model
 
-from datetime import datetime
 from enum import Enum
 from typing import Annotated
 
@@ -13,73 +12,20 @@ from sqlmodel import Session
 
 from .auth import get_current_user
 from .utils import queryutil
+from .utils.crudutils import ActionResponse, make_crud_schemas
 from .utils.queryutil import GetListParams, get_list_params
 
 
 router = APIRouter()
 TAGS: list[str | Enum] = ['{{ model.__name__ }}']
 
-class ActionResponse(BaseModel):
-    success: bool
-    message: str
+
+CreateSchema, UpdateSchema, ResponseSchema, ListResponseSchema = make_crud_schemas(ApplicationSetting)
+{{ model.__name__ }}Create = CreateSchema
+{{ model.__name__ }}Update = UpdateSchema
 
 
-class {{ model.__name__ }}Create(BaseModel):
-    {%- for field in model.model_fields -%}
-        {% if field != 'id' -%}
-            {% set model_field = model.model_fields[field] -%}
-            {% set annotation = model_field.annotation -%}
-            {%- if 'class' in annotation|string -%}
-                {{ field }}: {{ annotation.__name__ -}}
-            {% else -%}
-                {{ field }}: {{ annotation -}}
-            {% endif -%}
-            {%- if not model_field.is_required() -%}
-                {%- if model_field.default is string -%}
-                    {{ '' }} | None = '{{ model_field.get_default() }}'
-                {%- else -%}
-                    {{ '' }} | None = {{  model_field.get_default() }}
-                {%- endif -%}
-            {% endif -%}
-        {%- endif %}
-    {% endfor %}
-
-
-class {{ model.__name__ }}Response(BaseModel):
-    {% for field in model.model_fields -%}
-        {% set model_field = model.model_fields[field] -%}
-        {% set annotation = model_field.annotation -%}
-        {%- if 'class' in annotation|string -%}
-            {{ field }}: {{ annotation.__name__ -}}
-        {% else -%}
-            {{ field }}: {{ annotation -}}
-        {% endif -%}
-        {%- if not model_field.is_required() -%}
-            {{ '' }} | None = None
-        {%- endif %}
-    {% endfor %}
-
-
-class {{ model.__name__ }}Update(BaseModel):
-    {%- for field in model.model_fields -%}
-        {% if field != 'id' -%}
-            {% set model_field = model.model_fields[field] -%}
-            {% set annotation = model_field.annotation -%}
-            {%- if 'class' in annotation|string -%}
-                {{ field }}: {{ annotation.__name__ }} | None = None
-            {%- else -%}
-                {{ field }}: {{ annotation }} | None = None
-            {%- endif %}
-        {%- endif %}
-    {% endfor %}
-
-
-class {{ model.__name__ }}ListResponse(BaseModel):
-    total: int
-    data: list[{{ model.__name__ }}Response]
-
-
-@router.post('/{{  route_name }}', response_model={{ model.__name__ }}Response, tags=TAGS)
+@router.post('/{{  route_name }}', response_model=ResponseSchema, tags=TAGS)
 async def create_{{ model.__name__.lower() }}(
     data: {{ model.__name__ }}Create,
     {%- if create_login_required %}{{ '\n\t' }}current_user: Annotated[User, Depends(get_current_user)], {%- endif %}
@@ -98,7 +44,7 @@ async def create_{{ model.__name__.lower() }}(
         ) from ex
 
 
-@router.get('/{{ route_name }}', response_model={{ model.__name__ }}ListResponse, tags=['{{ model.__name__ }}'])
+@router.get('/{{ route_name }}', response_model=ListResponseSchema, tags=['{{ model.__name__ }}'])
 async def get_{{ model.__name__.lower() }}s(
     {%- if read_login_required %}{{ '\n\t' }}current_user: Annotated[User, Depends(get_current_user)], {%- endif %}
     db: Annotated[Session, Depends(get_db)],
@@ -106,8 +52,8 @@ async def get_{{ model.__name__.lower() }}s(
 ):
     try:
         total, results = queryutil.get_list(db, {{ model.__name__ }}, params)
-        data = [{{ model.__name__ }}Response(**r.model_dump()) for r in results]
-        return {{ model.__name__ }}ListResponse(total=total, data=data)
+        data = [ResponseSchema(**r.model_dump()) for r in results]
+        return ListResponseSchema(total=total, data=data)
     except HTTPException as ex:
         raise ex
     except Exception as ex:
@@ -117,7 +63,7 @@ async def get_{{ model.__name__.lower() }}s(
         ) from ex
 
 
-@router.get('/{{  route_name }}/{id}', response_model={{ model.__name__ }}Response, tags=['{{ model.__name__ }}'])
+@router.get('/{{  route_name }}/{id}', response_model=ResponseSchema, tags=['{{ model.__name__ }}'])
 async def get_{{ model.__name__.lower() }}(
     {%- if read_login_required %}{{ '\n\t' }}current_user: Annotated[User, Depends(get_current_user)], {%- endif %}
     db: Annotated[Session, Depends(get_db)],
@@ -135,7 +81,7 @@ async def get_{{ model.__name__.lower() }}(
         ) from ex
 
 
-@router.patch('/{{  route_name }}/{id}', response_model={{ model.__name__ }}Response, tags=['{{ model.__name__ }}'])
+@router.patch('/{{  route_name }}/{id}', response_model=ResponseSchema, tags=['{{ model.__name__ }}'])
 async def update_{{ model.__name__.lower() }}(
     {%- if update_login_required %}{{ '\n\t' }}current_user: Annotated[User, Depends(get_current_user)], {%- endif %}
     db: Annotated[Session, Depends(get_db)],

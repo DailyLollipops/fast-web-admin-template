@@ -1,4 +1,3 @@
-from datetime import datetime
 from enum import Enum
 from typing import Annotated
 
@@ -6,55 +5,34 @@ from database import get_db
 from database.models.application_setting import ApplicationSetting
 from database.models.user import User
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
 from sqlmodel import Session
 
 from .auth import get_current_user
 from .utils import queryutil
+from .utils.crudutils import ActionResponse, make_crud_schemas
 from .utils.queryutil import GetListParams, get_list_params
 
 
 router = APIRouter()
 TAGS: list[str | Enum] = ['Application Setting']
 
-class ActionResponse(BaseModel):
-    success: bool
-    message: str
+
+CreateSchema, UpdateSchema, ResponseSchema, ListResponseSchema = make_crud_schemas(ApplicationSetting)
+ApplicationSettingCreate = CreateSchema
+ApplicationSettingUpdate = UpdateSchema
 
 
-class ApplicationSettingCreate(BaseModel):
-    name: str
-    value: str = ''
-    
-
-class ApplicationSettingResponse(BaseModel):
-    id: int
-    name: str
-    value: str
-    created_at: datetime
-    updated_at: datetime
-    modified_by_id: int
-
-
-class ApplicationSettingListResponse(BaseModel):
-    total: int
-    data: list[ApplicationSettingResponse]
-
-
-class ApplicationSettingUpdate(BaseModel):
-    name: str | None = None
-    value: str | None = ''
-
-
-@router.post('/application_settings', response_model=ApplicationSettingResponse, tags=TAGS)
+@router.post('/application_settings', response_model=ResponseSchema, tags=TAGS)
 def create_application_setting(
 	current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
     data: ApplicationSettingCreate,
 ):
     try:
+        fields = data.model_dump()
+        fields.pop('modified_by_id')
         obj = ApplicationSetting(
-            **data.model_dump(),
+            **fields,
             modified_by_id=current_user.id
         )
         result = queryutil.create_one(db, obj)
@@ -68,7 +46,7 @@ def create_application_setting(
         ) from ex
 
 
-@router.get('/application_settings', response_model=ApplicationSettingListResponse, tags=TAGS)
+@router.get('/application_settings', response_model=ListResponseSchema, tags=TAGS)
 def get_application_settings(
 	current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
@@ -76,8 +54,8 @@ def get_application_settings(
 ):
     try:
         total, results = queryutil.get_list(db, ApplicationSetting, params)
-        data = [ApplicationSettingResponse(**r.model_dump()) for r in results]
-        return ApplicationSettingListResponse(total=total, data=data)
+        data = [ResponseSchema(**r.model_dump()) for r in results]
+        return ListResponseSchema(total=total, data=data)
     except HTTPException as ex:
         raise ex
     except Exception as ex:
@@ -87,7 +65,7 @@ def get_application_settings(
         ) from ex
 
 
-@router.get('/application_settings/{id}', response_model=ApplicationSettingResponse, tags=TAGS)
+@router.get('/application_settings/{id}', response_model=ResponseSchema, tags=TAGS)
 def get_application_setting(
 	current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
@@ -105,7 +83,7 @@ def get_application_setting(
         ) from ex
 
 
-@router.patch('/application_settings/{id}', response_model=ApplicationSettingResponse, tags=TAGS)
+@router.patch('/application_settings/{id}', response_model=ResponseSchema, tags=TAGS)
 def update_application_setting(
 	current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
