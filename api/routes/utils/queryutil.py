@@ -194,7 +194,7 @@ def update_one(db: Session, model_cls: type[SQLModel], id: int, data: BaseModel)
     unique_fields = [
         field
         for field, info in model_cls.model_fields.items()
-        if getattr(info, 'unique', False)
+        if getattr(info, 'unique', False) and info.primary_key is not True
     ]
 
     obj = db.get(model_cls, id)
@@ -221,15 +221,15 @@ def update_one(db: Session, model_cls: type[SQLModel], id: int, data: BaseModel)
 
     db.add(obj)
     db.commit()
-    db.refresh(data)
-    return data
+    db.refresh(obj)
+    return obj
 
 
 def update_many(db: Session, model_cls: type[SQLModel], ids: list[int], data_list: list[BaseModel]):
     unique_fields = [
         field
         for field, info in model_cls.model_fields.items()
-        if getattr(info, 'unique', False)
+        if getattr(info, 'unique', False) and info.primary_key is not True
     ]
 
     updated_objs = []
