@@ -3,9 +3,9 @@ from typing import Annotated
 
 import bcrypt
 from database import get_db
+from database.models.notification import Notification
+from database.models.user import User
 from fastapi import APIRouter, Depends, HTTPException, status
-from models.notification import Notification
-from models.user import User
 from pydantic import BaseModel
 from sqlalchemy import or_
 from sqlmodel import Session, delete

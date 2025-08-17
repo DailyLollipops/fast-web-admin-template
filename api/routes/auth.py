@@ -3,13 +3,13 @@ from typing import Annotated
 import bcrypt
 from constants import ApplicationSettings, VerificationMethod
 from database import get_db
+from database.models.application_setting import ApplicationSetting
+from database.models.role_access_control import RoleAccessControl
+from database.models.template import Template
+from database.models.user import User
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from itsdangerous import URLSafeTimedSerializer
-from models.application_setting import ApplicationSetting
-from models.role_access_control import RoleAccessControl
-from models.template import Template
-from models.user import User
 from passlib.context import CryptContext
 from pydantic import BaseModel
 from settings import settings

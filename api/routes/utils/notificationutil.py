@@ -1,7 +1,7 @@
 from constants import ApplicationSettings
-from models.application_setting import ApplicationSetting
-from models.notification import Notification
-from models.user import User
+from database.models.application_setting import ApplicationSetting
+from database.models.notification import Notification
+from database.models.user import User
 from sqlmodel import Session, insert, literal, select
 
 

@@ -17,8 +17,8 @@ from textblob import TextBlob
 
 
 BASE_PATH = Path(__file__).parent.parent
-MODELS_DIR = (BASE_PATH / 'api' / 'models')
 ROUTES_DIR = (BASE_PATH / 'api' / 'routes')
+MODELS_DIR = (BASE_PATH / 'api' / 'database' / 'models')
 FACTORY_DIR = (BASE_PATH / 'api' / 'database' / 'factory')
 TEMPLATES_DIR = (BASE_PATH / 'tools' / 'templates')
 

@@ -6,8 +6,8 @@ from typing import Annotated
 
 from database import get_db
 from fastapi import APIRouter, Depends, HTTPException, status
-from models.user import User
-from models.{{ module }} import {{ model.__name__ }}
+from database.models.user import User
+from database.models.{{ module }} import {{ model.__name__ }}
 from pydantic import BaseModel
 from sqlmodel import Session
 

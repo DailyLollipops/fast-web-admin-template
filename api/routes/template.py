@@ -3,9 +3,9 @@ from enum import Enum
 from typing import Annotated
 
 from database import get_db
+from database.models.template import Template
+from database.models.user import User
 from fastapi import APIRouter, Depends, HTTPException, status
-from models.template import Template
-from models.user import User
 from pydantic import BaseModel
 from sqlmodel import Session
 

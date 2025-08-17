@@ -1,7 +1,7 @@
 from constants import ApplicationSettings
+from database.models.application_setting import ApplicationSetting
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 from jinja2 import Template
-from models.application_setting import ApplicationSetting
 from sqlmodel import Session, select
 
 
