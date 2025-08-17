@@ -11,6 +11,7 @@ T = TypeVar('T', bound=SQLModel)
 
 class Operands(str, Enum):
     eq = '=='
+    neq = '!='
     gt = '>'
     gte = '>='
     lt = '<'
@@ -145,6 +146,8 @@ def get_list[T: SQLModel](
             column = getattr(model_cls, filter.field)
             if filter.op == Operands.eq:
                 q = q.where(column == filter.value)
+            elif filter.op == Operands.neq:
+                q = q.where(column != filter.value)
             elif filter.op == Operands.gt:
                 q = q.where(column > filter.value)
             elif filter.op == Operands.gte:
