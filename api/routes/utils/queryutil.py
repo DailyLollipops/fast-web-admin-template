@@ -17,6 +17,7 @@ class Operands(str, Enum):
     lt = '<'
     lte = '<='
     in_ = 'in'
+    not_in = 'not_in'
 
 
 class GetListFilter(BaseModel):
@@ -160,6 +161,10 @@ def get_list[T: SQLModel](
                 if isinstance(filter.value, list) and filter.value:
                     if column := getattr(model_cls, filter.field, None):
                         q = q.where(column.in_(filter.value))
+            elif filter.op == Operands.not_in:
+                if isinstance(filter.value, list) and filter.value:
+                    if column := getattr(model_cls, filter.field, None):
+                        q = q.where(~column.in_(filter.value))
 
     if params.order_field is not None:
         if params.order_field not in model_cls.model_fields:
