@@ -114,7 +114,7 @@ async def get_user(
 
 
 @router.patch('/users/{id}', response_model=UserResponse, tags=TAGS)
-def update_user(
+async def update_user(
 	current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
     id: int,
@@ -126,8 +126,7 @@ def update_user(
                 data.password.encode('utf-8'),
                 bcrypt.gensalt()
             ).decode('utf-8')
-        obj = User(id=id, **data.model_dump())
-        result = queryutil.update_one(db, obj)
+        result = queryutil.update_one(db, User, id, data)
         return result
     except HTTPException as ex:
         raise ex

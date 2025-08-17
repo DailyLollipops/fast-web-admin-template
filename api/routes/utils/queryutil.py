@@ -153,6 +153,10 @@ def get_list[T: SQLModel](
                 q = q.where(column < filter.value)
             elif filter.op == Operands.lte:
                 q = q.where(column <= filter.value)
+            elif filter.op == Operands.in_:
+                if isinstance(filter.value, list) and filter.value:
+                    if column := getattr(model_cls, filter.field, None):
+                        q = q.where(column.in_(filter.value))
 
     if params.order_field is not None:
         if params.order_field not in model_cls.model_fields:
@@ -178,22 +182,22 @@ def get_list[T: SQLModel](
     return total, result
 
 
-def update_one(db: Session, data: SQLModel):
-    model_cls = type(data)
+def update_one(db: Session, model_cls: type[SQLModel], id: int, data: BaseModel):
     unique_fields = [
         field
         for field, info in model_cls.model_fields.items()
         if getattr(info, 'unique', False)
     ]
 
-    if not db.get(model_cls, data.id): # type: ignore
+    obj = db.get(model_cls, id)
+    if not obj:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f'{model_cls.__name__} not found'
         )
 
     q = select(model_cls)
-    q = q.where(model_cls.id != data.id) # type: ignore
+    q = q.where(model_cls.id != id) # type: ignore
     for field in unique_fields:
         q = q.where(getattr(model_cls, field) == getattr(data, field))
 
@@ -203,22 +207,27 @@ def update_one(db: Session, data: SQLModel):
             detail=f'{model_cls.__name__} unique constraint failed'
         )
 
-    db.add(data)
+    for field in data.model_fields:
+        if (value := getattr(data, field, None)) is not None:
+            setattr(obj, field, value)
+
+    db.add(obj)
     db.commit()
     db.refresh(data)
     return data
 
 
-def update_many(db: Session, data: list[SQLModel]):
-    model_cls = type(data[0])
+def update_many(db: Session, model_cls: type[SQLModel], ids: list[int], data_list: list[BaseModel]):
     unique_fields = [
         field
         for field, info in model_cls.model_fields.items()
         if getattr(info, 'unique', False)
     ]
 
-    for obj in data:
-        if not db.get(model_cls, data.id): # type: ignore
+    updated_objs = []
+    for id, data in zip(ids, data_list, strict=False):
+        obj = db.get(model_cls, id)
+        if not obj:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f'{model_cls.__name__} not found'
@@ -235,11 +244,17 @@ def update_many(db: Session, data: list[SQLModel]):
                 detail=f'{model_cls.__name__} unique constraint failed'
             )
         
-    db.add_all(data)
+        for field in data.model_fields:
+            if (value := getattr(data, field, None)) is not None:
+                setattr(obj, field, value)
+
+        updated_objs.append(obj)
+
+    db.add_all(updated_objs)
     db.commit()
-    for obj in data:
+    for obj in updated_objs:
         db.refresh(obj)
-    return data
+    return updated_objs
 
 
 def delete_one[T: SQLModel](db: Session, model_cls: type[T], id: int):

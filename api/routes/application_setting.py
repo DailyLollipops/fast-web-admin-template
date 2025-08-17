@@ -113,8 +113,7 @@ def update_application_setting(
     data: ApplicationSettingUpdate,
 ):
     try:
-        obj = ApplicationSetting(id=id, **data.model_dump())
-        result = queryutil.update_one(db, obj)
+        result = queryutil.update_one(db, ApplicationSetting, id, data)
         return result
     except HTTPException as ex:
         raise ex

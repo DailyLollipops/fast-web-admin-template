@@ -116,8 +116,7 @@ def update_template(
     data: TemplateUpdate,
 ):
     try:
-        obj = Template(id=id, **data.model_dump())
-        result = queryutil.update_one(db, obj)
+        result = queryutil.update_one(db, Template, id, data)
         return result
     except HTTPException as ex:
         raise ex

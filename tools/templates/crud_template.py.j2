@@ -143,8 +143,7 @@ async def update_{{ model.__name__.lower() }}(
     data: {{ model.__name__ }}Update,
 ):
     try:
-        obj = {{ model.__name__ }}(id=id, **data.model_dump())
-        result = queryutil.update_one(db, obj)
+        result = queryutil.update_one(db, {{ model.__name__ }}, id, data)
         return result
     except HTTPException as ex:
         raise ex

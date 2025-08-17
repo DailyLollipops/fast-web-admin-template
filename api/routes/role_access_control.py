@@ -119,8 +119,7 @@ async def update_roleaccesscontrol(
     data: RoleAccessControlUpdate,
 ):
     try:
-        obj = RoleAccessControl(id=id, **data.model_dump(), modified_by_id=current_user.id)
-        result = queryutil.update_one(db, obj)
+        result = queryutil.update_one(db, RoleAccessControl, id, data)
         return result
     except HTTPException as ex:
         raise ex
