@@ -194,7 +194,7 @@ def update_one(db: Session, model_cls: type[SQLModel], id: int, data: BaseModel)
     unique_fields = [
         field
         for field, info in model_cls.model_fields.items()
-        if getattr(info, 'unique', False) and info.primary_key is not True
+        if info.unique is True and info.primary_key is not True
     ]
 
     obj = db.get(model_cls, id)
@@ -204,16 +204,19 @@ def update_one(db: Session, model_cls: type[SQLModel], id: int, data: BaseModel)
             detail=f'{model_cls.__name__} not found'
         )
 
-    q = select(model_cls)
-    q = q.where(model_cls.id != id) # type: ignore
+    data_dict = data.model_dump(exclude_unset=True)
     for field in unique_fields:
-        q = q.where(getattr(model_cls, field) == getattr(data, field))
-
-    if db.exec(q).first():
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f'{model_cls.__name__} unique constraint failed'
-        )
+        if field in data_dict:
+            value = data_dict[field]
+            q = select(model_cls).where(
+                getattr(model_cls, field) == value,
+                model_cls.id != id # type: ignore
+            )
+            if db.exec(q).first():
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"{model_cls.__name__} with {field}={value} already exists",
+                )
 
     for field in data.model_fields:
         if (value := getattr(data, field, None)) is not None:
@@ -241,16 +244,19 @@ def update_many(db: Session, model_cls: type[SQLModel], ids: list[int], data_lis
                 detail=f'{model_cls.__name__} not found'
             )
 
-        q = select(model_cls)
-        q = q.where(model_cls.id != obj.id) # type: ignore
+        data_dict = data.model_dump(exclude_unset=True)
         for field in unique_fields:
-            q = q.where(getattr(model_cls, field) == getattr(obj, field))
-
-        if db.exec(q).first():
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f'{model_cls.__name__} unique constraint failed'
-            )
+            if field in data_dict:
+                value = data_dict[field]
+                q = select(model_cls).where(
+                    getattr(model_cls, field) == value,
+                    model_cls.id != id # type: ignore
+                )
+                if db.exec(q).first():
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail=f"{model_cls.__name__} with {field}={value} already exists",
+                    )
         
         for field in data.model_fields:
             if (value := getattr(data, field, None)) is not None:
