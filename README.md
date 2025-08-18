@@ -53,6 +53,17 @@ docker compose --profile <profile> up -d --remove-orphans
 docker compose exec api make run-migration
 ```
 
+### 6. Generating the system account
+
+System accounts can manage system application settings.
+To create one:
+
+```bash
+docker compose exec api make create-superuser
+```
+
+_Note: mentions on container `api` refer to the dev `api` container, if on production mode (e.g. `--profile prod`), use `pr-api` instead._
+
 ## 🧩 Development
 
 ### Running migrations

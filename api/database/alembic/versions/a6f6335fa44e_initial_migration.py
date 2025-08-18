@@ -123,7 +123,7 @@ def upgrade() -> None:
     op.bulk_insert(
         role_access_control_table, [
             {
-                'role': 'admin',
+                'role': 'system',
                 'permissions': ["*"]
             }
         ]

@@ -15,5 +15,8 @@ run-migration:
 downgrade:
 	cd database && uv run alembic downgrade $(TARGET)
 
+create-superuser:
+	uv run scripts/create_superuser.py
+
 # Default TARGET to "-1" (one step) if not provided
 TARGET ?= -1
