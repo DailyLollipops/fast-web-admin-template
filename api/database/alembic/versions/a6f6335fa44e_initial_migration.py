@@ -43,7 +43,7 @@ def upgrade() -> None:
         sa.Column('value', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column('created_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
         sa.Column('updated_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False, onupdate=sa.text('CURRENT_TIMESTAMP')),
-        sa.Column('modified_by_id', sa.Integer(), nullable=False),
+        sa.Column('modified_by_id', sa.Integer(), nullable=True),
         sa.ForeignKeyConstraint(['modified_by_id'], ['users.id'], ),
         sa.PrimaryKeyConstraint('id'),
         sa.UniqueConstraint('name')
@@ -51,7 +51,7 @@ def upgrade() -> None:
 
     role_access_control_table = op.create_table('role_access_control',
         sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('modified_by_id', sa.Integer(), nullable=False),
+        sa.Column('modified_by_id', sa.Integer(), nullable=True),
         sa.Column('role', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column('permissions', sa.JSON(), nullable=True),
         sa.Column('created_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
@@ -68,7 +68,7 @@ def upgrade() -> None:
         sa.Column('path', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column('created_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
         sa.Column('updated_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False, onupdate=sa.text('CURRENT_TIMESTAMP')),
-        sa.Column('modified_by_id', sa.Integer(), nullable=False),
+        sa.Column('modified_by_id', sa.Integer(), nullable=True),
         sa.ForeignKeyConstraint(['modified_by_id'], ['users.id'], ),
         sa.PrimaryKeyConstraint('id'),
         sa.UniqueConstraint('name')
@@ -88,53 +88,34 @@ def upgrade() -> None:
     )
 
     op.bulk_insert(
-        users_table, [
-            {
-                'name': 'System',
-                'email': 'system@example.com',
-                'role': 'system',
-                'password': bcrypt.hashpw('password'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8'),
-                'verified': True
-            }
-        ]
-    )
-
-    op.bulk_insert(
         application_settings_table, [
             {
                 'name': 'notification',
                 'value': '1',
-                'modified_by_id': 1
             },
             {
                 'name': 'user_verification',
                 'value': 'none',
-                'modified_by_id': 1
             },
             {
                 'name': 'base_url',
                 'value': 'http://localhost',
-                'modified_by_id': 1
             },
             {
                 'name': 'smtp_server',
                 'value': '',
-                'modified_by_id': 1
             },
             {
                 'name': 'smtp_port',
                 'value': '',
-                'modified_by_id': 1
             },
             {
                 'name': 'smtp_username',
                 'value': '',
-                'modified_by_id': 1
             },
             {
                 'name': 'smtp_password',
                 'value': '',
-                'modified_by_id': 1
             },
         ]
     )
@@ -142,7 +123,6 @@ def upgrade() -> None:
     op.bulk_insert(
         role_access_control_table, [
             {
-                'modified_by_id': 1,
                 'role': 'admin',
                 'permissions': ["*"]
             }
@@ -155,7 +135,6 @@ def upgrade() -> None:
                 'name': 'email_verification',
                 'template_type': 'email',
                 'path': 'templates/emails/email_verification.html.j2',
-                'modified_by_id': 1,
             },
         ]
     )

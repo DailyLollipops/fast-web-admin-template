@@ -96,6 +96,8 @@ def update_application_setting(
     except HTTPException as ex:
         raise ex
     except Exception as ex:
+        import traceback
+        print(traceback.format_exc())
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(ex)
