@@ -33,7 +33,7 @@ def can_access(db: Session, resource: str, action: str, role: str):
     result = db.exec(q).first()
     
     if not result:
-        return True
+        return False
     
     # Permission format: <resource>.<action>
     for permission in result.permissions:
