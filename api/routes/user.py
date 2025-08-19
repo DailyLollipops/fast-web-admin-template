@@ -4,10 +4,11 @@ from typing import Annotated
 import bcrypt
 from database import get_db
 from database.models.notification import Notification
+from database.models.role_access_control import RoleAccessControl
 from database.models.user import User
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import or_
-from sqlmodel import Session, delete
+from sqlmodel import Session, delete, select
 
 from .auth import get_current_user
 from .utils import queryutil
@@ -22,6 +23,10 @@ TAGS: list[str | Enum] = ['User']
 CreateSchema, UpdateSchema, ResponseSchema, ListResponseSchema = make_crud_schemas(User)
 UserCreate = CreateSchema
 UserUpdate = UpdateSchema
+
+
+class UserAuthSchema(ResponseSchema):
+    permissions: list[str]
 
 
 @router.post('/users', response_model=ResponseSchema, tags=TAGS)
@@ -127,9 +132,14 @@ async def delete_user(
     )
 
 
-@router.get('/me', response_model=ResponseSchema, tags=TAGS)
+@router.get('/me', response_model=UserAuthSchema, tags=TAGS)
 async def me(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ):
-    return current_user
+    permissions = []
+    q = select(RoleAccessControl).where(User.role == current_user.role)
+    if rbac := db.exec(q).first():
+        permissions = rbac.permissions or []
+
+    return UserAuthSchema(**current_user.model_dump(), permissions=permissions)
