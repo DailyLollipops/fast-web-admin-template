@@ -125,7 +125,15 @@ def upgrade() -> None:
             {
                 'role': 'system',
                 'permissions': ["*"]
-            }
+            },
+            {
+                'role': 'admin',
+                'permissions': ["templates.*"]
+            },
+            {
+                'role': 'user',
+                'permissions': []
+            },
         ]
     )
 
