@@ -7,7 +7,7 @@ from database import get_db
 from database.models.role_access_control import RoleAccessControl
 from database.models.user import User
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import Session
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from .auth import get_current_user
 from .utils import queryutil
@@ -28,11 +28,11 @@ RoleAccessControlUpdate = UpdateSchema
 async def create_roleaccesscontrol(
     data: RoleAccessControlCreate,
 	current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[Session, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     try:
         obj = RoleAccessControl(**data.model_dump(), modified_by_id=current_user.id)
-        result = queryutil.create_one(db, obj)
+        result = await queryutil.create_one(db, obj)
         return result
     except HTTPException as ex:
         raise ex
@@ -46,11 +46,11 @@ async def create_roleaccesscontrol(
 @router.get('/role_access_controls', response_model=ListResponseSchema, tags=['RoleAccessControl'])
 async def get_roleaccesscontrols(
 	current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[Session, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_db)],
     params: Annotated[GetListParams, Depends(get_list_params)],
 ):
     try:
-        total, results = queryutil.get_list(db, RoleAccessControl, params)
+        total, results = await queryutil.get_list(db, RoleAccessControl, params)
         data = [ResponseSchema(**r.model_dump()) for r in results]
         return ListResponseSchema(total=total, data=data)
     except HTTPException as ex:
@@ -65,11 +65,11 @@ async def get_roleaccesscontrols(
 @router.get('/role_access_controls/{id}', response_model=ResponseSchema, tags=['RoleAccessControl'])
 async def get_roleaccesscontrol(
 	current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[Session, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_db)],
     id: int,
 ):
     try:
-        result = queryutil.get_one(db, RoleAccessControl, id)
+        result = await queryutil.get_one(db, RoleAccessControl, id)
         return result
     except HTTPException as ex:
         raise ex
@@ -83,12 +83,13 @@ async def get_roleaccesscontrol(
 @router.patch('/role_access_controls/{id}', response_model=ResponseSchema, tags=['RoleAccessControl'])
 async def update_roleaccesscontrol(
 	current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[Session, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_db)],
     id: int,
     data: RoleAccessControlUpdate,
 ):
     try:
-        result = queryutil.update_one(db, RoleAccessControl, id, data)
+        data.modified_by_id = current_user.id # type: ignore
+        result = await queryutil.update_one(db, RoleAccessControl, id, data)
         return result
     except HTTPException as ex:
         raise ex
@@ -102,11 +103,11 @@ async def update_roleaccesscontrol(
 @router.delete('/role_access_controls/{id}', response_model=ActionResponse, tags=['RoleAccessControl'])
 async def delete_roleaccesscontrol(
 	current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[Session, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_db)],
     id: int,
 ):
     try:
-        queryutil.delete_one(db, RoleAccessControl, id)
+        await queryutil.delete_one(db, RoleAccessControl, id)
         return ActionResponse(
             success=True,
             message='Application Setting deleted successfully'

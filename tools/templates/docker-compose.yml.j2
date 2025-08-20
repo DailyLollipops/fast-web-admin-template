@@ -12,6 +12,7 @@ x-custom:
     MYSQL_USER: ${MYSQL_USER:-user}
     MYSQL_PASSWORD: ${MYSQL_PASSWORD:-password}
     DATABASE_URL: mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}
+    DATABASE_URL_ASYNC: mysql+aiomysql://${MYSQL_USER}:${MYSQL_PASSWORD}@${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}
   redis-env: &redis-env
     REDIS_HOST: ${REDIS_HOST:-redis}
     REDIS_PORT: ${REDIS_PORT:-6379}

@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from database.models.user import User
 from database.models.{{ module }} import {{ model.__name__ }}
 from pydantic import BaseModel
-from sqlmodel import Session
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from .auth import get_current_user
 from .utils import queryutil
@@ -29,11 +29,11 @@ CreateSchema, UpdateSchema, ResponseSchema, ListResponseSchema = make_crud_schem
 async def create_{{ model.__name__.lower() }}(
     data: {{ model.__name__ }}Create,
     {%- if create_login_required %}{{ '\n\t' }}current_user: Annotated[User, Depends(get_current_user)], {%- endif %}
-    db: Annotated[Session, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     try:
         obj = {{ model.__name__ }}(**data.model_dump())
-        result = queryutil.create_one(db, obj)
+        result = await queryutil.create_one(db, obj)
         return result
     except HTTPException as ex:
         raise ex
@@ -47,11 +47,11 @@ async def create_{{ model.__name__.lower() }}(
 @router.get('/{{ route_name }}', response_model=ListResponseSchema, tags=['{{ model.__name__ }}'])
 async def get_{{ model.__name__.lower() }}s(
     {%- if read_login_required %}{{ '\n\t' }}current_user: Annotated[User, Depends(get_current_user)], {%- endif %}
-    db: Annotated[Session, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_db)],
     params: Annotated[GetListParams, Depends(get_list_params)],
 ):
     try:
-        total, results = queryutil.get_list(db, {{ model.__name__ }}, params)
+        total, results = await queryutil.get_list(db, {{ model.__name__ }}, params)
         data = [ResponseSchema(**r.model_dump()) for r in results]
         return ListResponseSchema(total=total, data=data)
     except HTTPException as ex:
@@ -66,11 +66,11 @@ async def get_{{ model.__name__.lower() }}s(
 @router.get('/{{  route_name }}/{id}', response_model=ResponseSchema, tags=['{{ model.__name__ }}'])
 async def get_{{ model.__name__.lower() }}(
     {%- if read_login_required %}{{ '\n\t' }}current_user: Annotated[User, Depends(get_current_user)], {%- endif %}
-    db: Annotated[Session, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_db)],
     id: int,
 ):
     try:
-        result = queryutil.get_one(db, {{ model.__name__ }}, id)
+        result = await queryutil.get_one(db, {{ model.__name__ }}, id)
         return result
     except HTTPException as ex:
         raise ex
@@ -84,12 +84,12 @@ async def get_{{ model.__name__.lower() }}(
 @router.patch('/{{  route_name }}/{id}', response_model=ResponseSchema, tags=['{{ model.__name__ }}'])
 async def update_{{ model.__name__.lower() }}(
     {%- if update_login_required %}{{ '\n\t' }}current_user: Annotated[User, Depends(get_current_user)], {%- endif %}
-    db: Annotated[Session, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_db)],
     id: int,
     data: {{ model.__name__ }}Update,
 ):
     try:
-        result = queryutil.update_one(db, {{ model.__name__ }}, id, data)
+        result = await queryutil.update_one(db, {{ model.__name__ }}, id, data)
         return result
     except HTTPException as ex:
         raise ex
@@ -103,11 +103,11 @@ async def update_{{ model.__name__.lower() }}(
 @router.delete('/{{  route_name }}/{id}', response_model=ActionResponse, tags=['{{ model.__name__ }}'])
 async def delete_{{ model.__name__.lower() }}(
     {%- if delete_login_required %}{{ '\n\t' }}current_user: Annotated[User, Depends(get_current_user)], {%- endif %}
-    db: Annotated[Session, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_db)],
     id: int,
 ):
     try:
-        queryutil.delete_one(db, {{ model.__name__ }}, id)
+        await queryutil.delete_one(db, {{ model.__name__ }}, id)
         return ActionResponse(
             success=True,
             message='Application Setting deleted successfully'

@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     MYSQL_PASSWORD: str
     MYSQL_DATABASE: str
     DATABASE_URL: str
+    DATABASE_URL_ASYNC: str
     REDIS_HOST: str
     REDIS_PORT: int = 6379
     SECRET_KEY: str

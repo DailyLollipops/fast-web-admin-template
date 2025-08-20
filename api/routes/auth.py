@@ -13,7 +13,8 @@ from itsdangerous import URLSafeTimedSerializer
 from passlib.context import CryptContext
 from pydantic import BaseModel
 from settings import settings
-from sqlmodel import Session, select
+from sqlmodel import select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from .utils import emailutil, notificationutil
 
@@ -28,9 +29,10 @@ class Token(BaseModel):
     token_type: str
 
 
-def can_access(db: Session, resource: str, action: str, role: str):
+async def can_access(db: AsyncSession, resource: str, action: str, role: str):
     q = select(RoleAccessControl).where(RoleAccessControl.role == role)
-    result = db.exec(q).first()
+    q_result = await db.exec(q)
+    result = q_result.first()
     
     if not result:
         return False
@@ -54,7 +56,7 @@ async def get_current_user(
     api_key: Annotated[str | None, Header()] = None,
     token: Annotated[str | None, Depends(oauth2_scheme)] = None,
 ):
-    db: Session = next(get_db())
+    db: AsyncSession = await anext(get_db())
     user = None
     if api_key:
         try:
@@ -91,7 +93,7 @@ async def get_current_user(
     }
     resource = request.url.path.split('/')[1]
     action = action_map.get(request.method, '')
-    if not can_access(db, resource, action, user.role):
+    if not await can_access(db, resource, action, user.role):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail='No access to resource'
@@ -101,7 +103,7 @@ async def get_current_user(
 
 
 async def get_user_by_api_key(
-    db: Session,
+    db: AsyncSession,
     api_key: Annotated[str | None, Header()] = None
 ):
     if api_key is None:
@@ -109,7 +111,8 @@ async def get_user_by_api_key(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail='API key missing'
         )
-    user = db.exec(select(User).where(User.api == api_key)).first()
+    result = await db.exec(select(User).where(User.api == api_key))
+    user = result.first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -119,7 +122,7 @@ async def get_user_by_api_key(
 
 
 async def get_user_by_jwt_token(
-    db: Session,
+    db: AsyncSession,
     token: Annotated[str, Depends(oauth2_scheme)] = ''
 ):
     credentials_exception = HTTPException(
@@ -135,15 +138,17 @@ async def get_user_by_jwt_token(
             raise credentials_exception
     except Exception as ex:
         raise credentials_exception from ex
-    user = db.exec(select(User).where(User.email == username)).first()
+    result = await db.exec(select(User).where(User.email == username))
+    user = result.first()
     if user is None:
         raise credentials_exception
     return user
 
 
-def authenticate_user(username: str, password: str, db: Session):
+async def authenticate_user(username: str, password: str, db: AsyncSession):
     query = select(User).where(User.email == username)
-    user = db.exec(query).first()
+    result = await db.exec(query)
+    user = result.first()
     if not user:
         return None
     if not pwd_context.verify(password, user.password):
@@ -169,10 +174,18 @@ class ActionResponse(BaseModel):
     message: str
 
 
+async def get_setting(db: AsyncSession, name: str):
+    result = await db.exec(
+        select(ApplicationSetting)
+        .where(ApplicationSetting.name == name)
+    )
+    return result.first()
+
+
 @router.post('/auth/register', tags=['Authentication'])
 async def register_user(
     data: RegisterForm,
-    db: Annotated[Session, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> Token:
     if data.password != data.confirm_password:
         raise HTTPException(
@@ -180,17 +193,15 @@ async def register_user(
             detail='Passwords do not match'
         )
 
-    existing_user = db.exec(select(User).where(User.email == data.email)).first()
+    result = await db.exec(select(User).where(User.email == data.email))
+    existing_user = result.first()
     if existing_user:
         raise HTTPException(
             status_code=400,
             detail='Email/Username already registered'
         )
 
-    verification_setting = db.exec(
-        select(ApplicationSetting)
-        .where(ApplicationSetting.name == ApplicationSettings.USER_VERIFICATION)
-    ).first()
+    verification_setting = await get_setting(db, ApplicationSettings.USER_VERIFICATION)
 
     if not verification_setting:
         raise Exception('User verification setting not found. Perhaps you forgot to run migration?')
@@ -204,19 +215,19 @@ async def register_user(
         verified=True if verification_setting.value == VerificationMethod.NONE else False
     )
     db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+    await db.commit()
+    await db.refresh(new_user)
 
     access_token = create_access_token(data={'sub': data.email}, salt='user-auth')
 
-    notificationutil.notify_role(
+    await notificationutil.notify_role(
         db=db,
         triggered_by=new_user.id,
         roles=['admin'],
         title='New user has been created',
         body=f'A new user has been created by an admin with email: {new_user.email}'
     )
-    notificationutil.notify_user(
+    await notificationutil.notify_user(
         db=db,
         triggered_by=2,
         user_id=new_user.id,
@@ -227,17 +238,15 @@ async def register_user(
     if verification_setting.value == VerificationMethod.EMAIL:
         verification_token = create_access_token(data={'sub': data.email}, salt='user-verification')
 
-        base_url_setting = db.exec(
-            select(ApplicationSetting)
-            .where(ApplicationSetting.name == ApplicationSettings.BASE_URL)
-        ).first()
+        base_url_setting = await get_setting(db, ApplicationSettings.BASE_URL)
         if not base_url_setting:
             raise Exception('Email base url setting not found. Perhaps you forgot to run migration?')
         
-        email_template_setting = db.exec(
+        template_result = await db.exec(
             select(Template)
             .where(ApplicationSetting.name == 'email_verification')
-        ).first()
+        )
+        email_template_setting = template_result.first()
         if not email_template_setting:
             raise Exception('Email template path setting not found. Perhaps you forgot to run migration?')
         
@@ -262,9 +271,9 @@ async def register_user(
 @router.post('/auth/login', tags=['Authentication'])
 async def login_user(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    db: Annotated[Session, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> Token:
-    user = authenticate_user(form_data.username, form_data.password, db)
+    user = await authenticate_user(form_data.username, form_data.password, db)
     if not user:
         raise HTTPException(status_code=401, detail='User not found')
     if not user.verified:
@@ -277,7 +286,7 @@ async def login_user(
 @router.get('/auth/verify_email', response_model=ActionResponse, tags=['Authentication'])
 async def verify_email(
     token: str,
-    db: Annotated[Session, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -294,11 +303,12 @@ async def verify_email(
     except Exception as ex:
         raise credentials_exception from ex
     
-    user = db.exec(select(User).where(User.email == username)).first()
+    result = await db.exec(select(User).where(User.email == username))
+    user = result.first()
     if user is None:
         raise credentials_exception
     
     user.verified = True
     db.add(user)
-    db.commit()
+    await db.commit()
     return ActionResponse(success=True, message='Email successfully verified')

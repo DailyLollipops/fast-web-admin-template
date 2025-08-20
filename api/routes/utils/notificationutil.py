@@ -2,20 +2,22 @@ from constants import ApplicationSettings
 from database.models.application_setting import ApplicationSetting
 from database.models.notification import Notification
 from database.models.user import User
-from sqlmodel import Session, insert, literal, select
+from sqlmodel import insert, literal, select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 
-def notify_role(
-    db: Session,
+async def notify_role(
+    db: AsyncSession,
     triggered_by: int,
     roles: list[str],
     title: str,
     body: str
 ):
-    notification_setting = db.exec(
+    result = await db.exec(
         select(ApplicationSetting)
         .where(ApplicationSetting.name == ApplicationSettings.NOTIFICATION_SETTING)
-    ).first()
+    )
+    notification_setting = result.first()
     if not notification_setting:
         raise Exception('Notification settings missing, perhaps you did not run initial migration or has been deleted')
     
@@ -41,20 +43,21 @@ def notify_role(
             )
         )
     )
-    db.exec(statement) # type: ignore
-    db.commit()
+    await db.exec(statement) # type: ignore
+    await db.commit()
 
-def notify_user(
-    db: Session,
+async def notify_user(
+    db: AsyncSession,
     triggered_by: int,
     user_id: int,
     title: str,
     body: str
 ):
-    notification_setting = db.exec(
+    result = await db.exec(
         select(ApplicationSetting)
         .where(ApplicationSetting.name == ApplicationSettings.NOTIFICATION_SETTING)
-    ).first()
+    )
+    notification_setting = result.first()
     if not notification_setting:
         raise Exception('Notification settings missing, perhaps you did not run initial migration or has been deleted')
     
@@ -69,4 +72,4 @@ def notify_user(
         body=body
     )
     db.add(notification)
-    db.commit()
+    await db.commit()

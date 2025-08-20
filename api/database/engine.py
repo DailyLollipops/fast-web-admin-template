@@ -1,16 +1,25 @@
 from redis import Redis
 from settings import settings
-from sqlmodel import Session, SQLModel, create_engine
+from sqlalchemy.ext.asyncio import create_async_engine
+from sqlmodel import SQLModel
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 
-engine = create_engine(settings.DATABASE_URL, echo=False)
+engine = create_async_engine(
+    settings.DATABASE_URL_ASYNC,
+    echo=False,
+    pool_size=10,
+    max_overflow=20,
+    pool_timeout=60,
+    pool_recycle=1800,
+)
 
-def init_db():
-    """Create tables."""
-    SQLModel.metadata.create_all(bind=engine)
+async def init_db():
+    async with engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.create_all)
 
-def get_db():
-    with Session(engine) as session:
+async def get_db():
+    async with AsyncSession(engine) as session:
         yield session
 
 def get_redis():

@@ -6,6 +6,7 @@ from fastapi import HTTPException, Query, status
 from pydantic import BaseModel, ValidationError, model_validator
 from sqlalchemy.orm import selectinload
 from sqlmodel import SQLModel, asc, desc, func, inspect, select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 
 T = TypeVar('T', bound=SQLModel)
@@ -79,7 +80,7 @@ def get_list_params(
     )
 
 
-def create_one(db: Session, data: SQLModel):
+async def create_one(db: AsyncSession, data: SQLModel):
     model_cls = type(data)
     unique_fields = [
         field
@@ -91,19 +92,20 @@ def create_one(db: Session, data: SQLModel):
     for field in unique_fields:
         q = q.where(getattr(model_cls, field) == getattr(data, field))
 
-    if db.exec(q).first():
+    result = await db.exec(q)
+    if result.first():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f'{model_cls.__name__} unique constraint failed'
         )
 
     db.add(data)
-    db.commit()
-    db.refresh(data)
+    await db.commit()
+    await db.refresh(data)
     return data
 
 
-def create_many[T: SQLModel](db: Session, data: list[T]):
+async def create_many[T: SQLModel](db: AsyncSession, data: list[T]):
     model_cls = type(data[0])
     unique_fields = [
         field
@@ -116,21 +118,22 @@ def create_many[T: SQLModel](db: Session, data: list[T]):
         for field in unique_fields:
             q = q.where(getattr(model_cls, field) == getattr(obj, field))
 
-        if db.exec(q).first():
+        result = await db.exec(q)
+        if result.first():
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=f'{model_cls.__name__} unique constraint failed'
             )
         
     db.add_all(data)
-    db.commit()
+    await db.commit()
     for obj in data:
-        db.refresh(obj)
+        await db.refresh(obj)
     return data
 
 
-def get_one[T: SQLModel](db: Session, model_cls: type[T], id: int):
-    if result := db.get(model_cls, id):
+async def get_one[T: SQLModel](db: AsyncSession, model_cls: type[T], id: int):
+    if result := await db.get(model_cls, id):
         return result
     
     raise HTTPException(
@@ -139,16 +142,17 @@ def get_one[T: SQLModel](db: Session, model_cls: type[T], id: int):
     )
 
 
-def get_many[T: SQLModel](db: Session, model_cls: type[T], ids: list[int]):
+async def get_many[T: SQLModel](db: AsyncSession, model_cls: type[T], ids: list[int]):
     q = (
         select(model_cls)
         .where(model_cls.id.in_(ids)) # type: ignore
     )
-    return db.exec(q).all()
+    result = await db.exec(q)
+    return result.all()
 
 
-def get_list[T: SQLModel](
-    db: Session,
+async def get_list[T: SQLModel](
+    db: AsyncSession,
     model_cls: type[T],
     params: GetListParams,
 ):
@@ -200,7 +204,8 @@ def get_list[T: SQLModel](
             q = q.order_by(desc(getattr(model_cls, params.order_field)))
 
     cq = select(func.count()).select_from(q.subquery())
-    total = db.exec(cq).first() or 0
+    cq_result = await db.exec(cq)
+    total = cq_result.first() or 0
 
     if params.offset is not None:
         q = q.offset(params.offset)
@@ -208,18 +213,19 @@ def get_list[T: SQLModel](
     if params.limit is not None:
         q = q.limit(params.limit)
 
-    result = db.exec(q).all()
+    q_result = await db.exec(q)
+    result = q_result.all()
     return total, result
 
 
-def update_one(db: Session, model_cls: type[SQLModel], id: int, data: BaseModel):
+async def update_one(db: AsyncSession, model_cls: type[SQLModel], id: int, data: BaseModel):
     unique_fields = [
         field
         for field, info in model_cls.model_fields.items()
         if info.unique is True and info.primary_key is not True
     ]
 
-    obj = db.get(model_cls, id)
+    obj = await db.get(model_cls, id)
     if not obj:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -234,7 +240,8 @@ def update_one(db: Session, model_cls: type[SQLModel], id: int, data: BaseModel)
                 getattr(model_cls, field) == value,
                 model_cls.id != id # type: ignore
             )
-            if db.exec(q).first():
+            result = await db.exec(q)
+            if result.first():
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
                     detail=f'{model_cls.__name__} with {field}={value} already exists',
@@ -245,12 +252,12 @@ def update_one(db: Session, model_cls: type[SQLModel], id: int, data: BaseModel)
             setattr(obj, field, value)
 
     db.add(obj)
-    db.commit()
-    db.refresh(obj)
+    await db.commit()
+    await db.refresh(obj)
     return obj
 
 
-def update_many(db: Session, model_cls: type[SQLModel], ids: list[int], data_list: list[BaseModel]):
+async def update_many(db: AsyncSession, model_cls: type[SQLModel], ids: list[int], data_list: list[BaseModel]):
     unique_fields = [
         field
         for field, info in model_cls.model_fields.items()
@@ -259,7 +266,7 @@ def update_many(db: Session, model_cls: type[SQLModel], ids: list[int], data_lis
 
     updated_objs = []
     for id, data in zip(ids, data_list, strict=False):
-        obj = db.get(model_cls, id)
+        obj = await db.get(model_cls, id)
         if not obj:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -274,7 +281,8 @@ def update_many(db: Session, model_cls: type[SQLModel], ids: list[int], data_lis
                     getattr(model_cls, field) == value,
                     model_cls.id != id # type: ignore
                 )
-                if db.exec(q).first():
+                result = await db.exec(q)
+                if result.first():
                     raise HTTPException(
                         status_code=status.HTTP_409_CONFLICT,
                         detail=f'{model_cls.__name__} with {field}={value} already exists',
@@ -287,30 +295,30 @@ def update_many(db: Session, model_cls: type[SQLModel], ids: list[int], data_lis
         updated_objs.append(obj)
 
     db.add_all(updated_objs)
-    db.commit()
+    await db.commit()
     for obj in updated_objs:
-        db.refresh(obj)
+        await db.refresh(obj)
     return updated_objs
 
 
-def delete_one[T: SQLModel](db: Session, model_cls: type[T], id: int):
-    result = db.get(model_cls, id)
+async def delete_one[T: SQLModel](db: AsyncSession, model_cls: type[T], id: int):
+    result = await db.get(model_cls, id)
     if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f'{model_cls.__name__} not found'
         )
-    db.delete(result)
-    db.commit()
+    await db.delete(result)
+    await db.commit()
 
 
-def delete_many[T: SQLModel](db: Session, model_cls: type[T], ids: list[int]):
+async def delete_many[T: SQLModel](db: AsyncSession, model_cls: type[T], ids: list[int]):
     for id in ids:
-        result = db.get(model_cls, id)
+        result = await db.get(model_cls, id)
         if not result:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f'{model_cls.__name__} not found'
             )
-        db.delete(result)
-    db.commit()
+        await db.delete(result)
+    await db.commit()
