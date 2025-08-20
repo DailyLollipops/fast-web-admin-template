@@ -27,6 +27,7 @@ export const dataProvider: DataProvider = withLifecycleCallbacks(
       const orderBy = params.sort?.order;
       const page = params.pagination?.page;
       const perPage = params.pagination?.perPage;
+      const isInfinite = params.meta?.infinite === true;
 
       const query: Record<string, string> = {};
 
@@ -36,12 +37,39 @@ export const dataProvider: DataProvider = withLifecycleCallbacks(
       if (orderBy !== undefined) {
         query["order_by"] = orderBy.toLowerCase();
       }
-      if (page !== undefined && perPage !== undefined) {
+      if (!isInfinite && page !== undefined && perPage !== undefined) {
         query["offset"] = ((page - 1) * perPage).toString();
         query["limit"] = perPage.toString();
       }
       if (params.filter !== undefined) {
-        query["filters"] = JSON.stringify(params.filter);
+        const operators = {
+          _neq: "!=",
+          _gt: ">",
+          _gte: ">=",
+          _lt: "<",
+          _lte: "<=",
+          _in: "in",
+          _nin: "not_in",
+        };
+
+        const filters = Object.keys(params.filter).map((key) => {
+          const matchedOp = Object.entries(operators).find(([suffix]) =>
+            key.endsWith(suffix),
+          );
+          return matchedOp
+            ? {
+                field: key.slice(0, -matchedOp[0].length),
+                operator: matchedOp[1],
+                value: params.filter[key],
+              }
+            : {
+                field: key,
+                operator: "==",
+                value: params.filter[key],
+              };
+        });
+
+        query["filters"] = JSON.stringify(filters);
       }
 
       const url = `${API_URL}/${resource}?${stringify(query)}`;
@@ -192,5 +220,7 @@ export const dataProvider: DataProvider = withLifecycleCallbacks(
       return { data: json };
     },
   },
-  [],
+  [
+    // Add lifecycle callbacks here
+  ],
 );

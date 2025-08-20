@@ -64,7 +64,32 @@ export const authProvider: AuthProvider = {
 
   getIdentity: async () => {
     const authCredentials = JSON.parse(localStorage.getItem(AUTH_DETAILS)!);
-    const { id, email, role, name, branch_id } = authCredentials;
-    return { id, email, role, name, branch_id };
+    return authCredentials;
+  },
+
+  canAccess: async ({ action, resource }) => {
+    const authCredentials = JSON.parse(localStorage.getItem(AUTH_DETAILS)!);
+    const rolePermissions = authCredentials?.permissions ?? undefined;
+
+    if (rolePermissions == undefined) {
+      return false;
+    }
+
+    for (const permission of rolePermissions) {
+      if (permission === "*") {
+        return true;
+      }
+
+      const [pResource, pAction] = permission.split(".");
+
+      if (
+        (pResource === resource || pResource === "*") &&
+        (pAction === action || pAction === "*")
+      ) {
+        return true;
+      }
+    }
+
+    return false;
   },
 };
