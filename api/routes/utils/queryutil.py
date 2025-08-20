@@ -4,7 +4,8 @@ from typing import Any, TypeVar
 
 from fastapi import HTTPException, Query, status
 from pydantic import BaseModel, ValidationError, model_validator
-from sqlmodel import Session, SQLModel, asc, desc, func, select
+from sqlalchemy.orm import selectinload
+from sqlmodel import SQLModel, asc, desc, func, inspect, select
 
 
 T = TypeVar('T', bound=SQLModel)
@@ -32,6 +33,7 @@ class GetListParams(BaseModel):
     limit: int | None = None
     offset: int | None = None
     filters: list[GetListFilter] | None = None
+    embeds: list[str] = []
 
     @model_validator(mode='before')
     def check_order_by(cls, values):
@@ -47,6 +49,7 @@ def get_list_params(
     limit: int = Query(10, ge=1, le=100, description='Limit number of results'),
     offset: int = Query(0, ge=0, description='Number of items to skip'),
     filters: str | None = Query(None, description='JSON encoded list of filters'),
+    embeds: str | None = Query(None, deprecated='List of relationship models to embed to response')
 ) -> GetListParams:
     parsed_filters = None
     if filters:
@@ -54,7 +57,17 @@ def get_list_params(
             filters_data = json.loads(filters)
             parsed_filters = [GetListFilter.model_validate(item) for item in filters_data]
         except (json.JSONDecodeError, ValidationError) as ex:
-            raise ValueError(f"Invalid filters JSON: {ex}") from ex
+            raise ValueError(f'Invalid filters JSON: {ex}') from ex
+
+    parsed_embeds = []
+    if embeds:
+        try:
+            embeds_data = json.loads(embeds)
+            if not isinstance(embeds_data, list):
+                raise ValueError('Embed data should be a list of strings')
+            parsed_embeds = embeds_data
+        except (json.JSONDecodeError, ValidationError, ValueError) as ex:
+            raise ValueError(f'Invalid embed JSON: {ex}') from ex
 
     return GetListParams(
         order_field=order_field,
@@ -62,6 +75,7 @@ def get_list_params(
         limit=limit,
         offset=offset,
         filters=parsed_filters,
+        embeds=parsed_embeds,
     )
 
 
@@ -139,6 +153,14 @@ def get_list[T: SQLModel](
     params: GetListParams,
 ):
     q = select(model_cls)
+    
+    mapper = inspect(model_cls)
+    relationships = [r.key for r in mapper.relationships]
+    embeds = set(params.embeds) & set(relationships)
+    for embed in embeds:
+        if hasattr(model_cls, embed):
+            q = q.options(selectinload(getattr(model_cls, embed)))
+
     if params.filters:
         for filter in params.filters:
             if filter.field not in model_cls.model_fields:
@@ -215,7 +237,7 @@ def update_one(db: Session, model_cls: type[SQLModel], id: int, data: BaseModel)
             if db.exec(q).first():
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail=f"{model_cls.__name__} with {field}={value} already exists",
+                    detail=f'{model_cls.__name__} with {field}={value} already exists',
                 )
 
     for field in data.model_fields:
@@ -255,7 +277,7 @@ def update_many(db: Session, model_cls: type[SQLModel], ids: list[int], data_lis
                 if db.exec(q).first():
                     raise HTTPException(
                         status_code=status.HTTP_409_CONFLICT,
-                        detail=f"{model_cls.__name__} with {field}={value} already exists",
+                        detail=f'{model_cls.__name__} with {field}={value} already exists',
                     )
         
         for field in data.model_fields:
