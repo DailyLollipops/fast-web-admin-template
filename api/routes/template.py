@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Annotated
 
-from database import get_db
+from database import get_async_db
 from database.models.template import Template
 from database.models.user import User
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -25,7 +25,7 @@ TemplateUpdate = UpdateSchema
 @router.post('/templates', response_model=ResponseSchema, tags=TAGS)
 async def create_template(
 	current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_async_db)],
     data: TemplateCreate,
 ):
     try:
@@ -43,7 +43,7 @@ async def create_template(
 @router.get('/templates', response_model=ListResponseSchema, tags=TAGS)
 async def get_templates(
 	current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_async_db)],
     params: Annotated[GetListParams, Depends(get_list_params)],
 ):
     try:
@@ -61,7 +61,7 @@ async def get_templates(
 @router.get('/templates/{id}', response_model=ResponseSchema, tags=TAGS)
 async def get_template(
 	current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_async_db)],
     id: int,
 ):
     try:
@@ -78,7 +78,7 @@ async def get_template(
 @router.patch('/templates/{id}', response_model=ResponseSchema, tags=TAGS)
 async def update_template(
 	current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_async_db)],
     id: int,
     data: TemplateUpdate,
 ):
@@ -96,7 +96,7 @@ async def update_template(
 @router.delete('/templates/{id}', response_model=ActionResponse, tags=TAGS)
 async def delete_template(
 	current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_async_db)],
     id: int,
 ):
     try:

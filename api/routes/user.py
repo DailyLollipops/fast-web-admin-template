@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Annotated
 
 import bcrypt
-from database import get_db
+from database import get_async_db
 from database.models.notification import Notification
 from database.models.role_access_control import RoleAccessControl
 from database.models.user import User
@@ -33,7 +33,7 @@ class UserAuthSchema(ResponseSchema):
 @router.post('/users', response_model=ResponseSchema, tags=TAGS)
 async def create_user(
     current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_async_db)],
     data: UserCreate,
 ):
     try:
@@ -53,7 +53,7 @@ async def create_user(
 @router.get('/users', response_model=ListResponseSchema, tags=TAGS)
 async def get_users(
     current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_async_db)],
     params: Annotated[GetListParams, Depends(get_list_params)],
 ):
     try:
@@ -72,7 +72,7 @@ async def get_users(
 @router.get('/users/{id}', response_model=ResponseSchema, tags=TAGS)
 async def get_user(
     current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_async_db)],
     id: int,
 ):
     try:
@@ -90,7 +90,7 @@ async def get_user(
 @router.patch('/users/{id}', response_model=ResponseSchema, tags=TAGS)
 async def update_user(
 	current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_async_db)],
     id: int,
     data: UserUpdate,
 ):
@@ -114,7 +114,7 @@ async def update_user(
 @router.delete('/users/{id}', tags=TAGS)
 async def delete_user(
     current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_async_db)],
     id: str,
 ):
     query = delete(Notification).where(
@@ -136,7 +136,7 @@ async def delete_user(
 @router.get('/me', response_model=UserAuthSchema, tags=TAGS)
 async def me(
     current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_async_db)],
 ):
     permissions = []
     q = select(RoleAccessControl).where(User.role == current_user.role)

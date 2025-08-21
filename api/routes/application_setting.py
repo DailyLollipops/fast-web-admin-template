@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Annotated
 
-from database import get_db
+from database import get_async_db
 from database.models.application_setting import ApplicationSetting
 from database.models.user import User
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -25,7 +25,7 @@ ApplicationSettingUpdate = UpdateSchema
 @router.post('/application_settings', response_model=ResponseSchema, tags=TAGS)
 async def create_application_setting(
 	current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_async_db)],
     data: ApplicationSettingCreate,
 ):
     try:
@@ -49,7 +49,7 @@ async def create_application_setting(
 @router.get('/application_settings', response_model=ListResponseSchema, tags=TAGS)
 async def get_application_settings(
 	current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_async_db)],
     params: Annotated[GetListParams, Depends(get_list_params)],
 ):
     try:
@@ -68,7 +68,7 @@ async def get_application_settings(
 @router.get('/application_settings/{id}', response_model=ResponseSchema, tags=TAGS)
 async def get_application_setting(
 	current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_async_db)],
     id: int,
 ):
     try:
@@ -86,7 +86,7 @@ async def get_application_setting(
 @router.patch('/application_settings/{id}', response_model=ResponseSchema, tags=TAGS)
 async def update_application_setting(
 	current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_async_db)],
     id: int,
     data: ApplicationSettingUpdate,
 ):
@@ -107,7 +107,7 @@ async def update_application_setting(
 @router.delete('/application_settings/{id}', response_model=ActionResponse, tags=TAGS)
 async def delete_application_setting(
 	current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_async_db)],
     id: int,
 ):
     try:

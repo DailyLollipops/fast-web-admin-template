@@ -2,7 +2,7 @@ from typing import Annotated
 
 import bcrypt
 from constants import ApplicationSettings, VerificationMethod
-from database import get_db
+from database import get_async_db
 from database.models.application_setting import ApplicationSetting
 from database.models.role_access_control import RoleAccessControl
 from database.models.template import Template
@@ -53,7 +53,7 @@ async def can_access(db: AsyncSession, resource: str, action: str, role: str):
 
 async def get_current_user(
     request: Request,
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_async_db)],
     api_key: Annotated[str | None, Header()] = None,
     token: Annotated[str | None, Depends(oauth2_scheme)] = None,
 ):
@@ -185,7 +185,7 @@ async def get_setting(db: AsyncSession, name: str):
 @router.post('/auth/register', tags=['Authentication'])
 async def register_user(
     data: RegisterForm,
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_async_db)],
 ) -> Token:
     if data.password != data.confirm_password:
         raise HTTPException(
@@ -271,7 +271,7 @@ async def register_user(
 @router.post('/auth/login', tags=['Authentication'])
 async def login_user(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_async_db)],
 ) -> Token:
     user = await authenticate_user(form_data.username, form_data.password, db)
     if not user:
@@ -286,7 +286,7 @@ async def login_user(
 @router.get('/auth/verify_email', response_model=ActionResponse, tags=['Authentication'])
 async def verify_email(
     token: str,
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_async_db)],
 ):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
