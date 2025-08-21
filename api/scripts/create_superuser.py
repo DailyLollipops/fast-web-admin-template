@@ -12,7 +12,7 @@ import re
 from getpass import getpass
 
 import bcrypt
-from database import get_db
+from database import get_sync_db
 from database.models.user import User
 
 
@@ -62,7 +62,7 @@ def main():
         verified=True,
     )
 
-    db = next(get_db())
+    db = next(get_sync_db())
     db.add(user)
     db.commit()
 

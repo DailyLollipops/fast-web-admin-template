@@ -3,7 +3,7 @@ import re
 
 import click
 from database import factory
-from database.engine import get_db
+from database.engine import get_sync_db
 from sqlmodel import select
 
 
@@ -33,7 +33,7 @@ def seed_random(num: int, force: bool, only: tuple[str] | None = None):
             if re.search(r'^(?!Base).+Factory$', f)
         ]
 
-    db = next(get_db())
+    db = next(get_sync_db())
     all_instances = []
     for f in factories:
         instances = f().make(num)
@@ -66,7 +66,7 @@ def seed_list(num: int, force: bool, only: tuple[str] | None = None):
             if re.search(r'^(?!Base).+Factory$', f)
         ]
     
-    db = next(get_db())
+    db = next(get_sync_db())
     all_instances = []
     for f in factories:
         instances = f().make_from_list(num)

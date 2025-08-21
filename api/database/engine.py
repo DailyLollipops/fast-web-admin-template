@@ -1,8 +1,20 @@
 from redis import Redis
 from settings import settings
 from sqlalchemy.ext.asyncio import create_async_engine
-from sqlmodel import SQLModel
+from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.ext.asyncio.session import AsyncSession
+
+
+sync_engine = create_engine(settings.DATABASE_URL, echo=False)
+
+
+def init_sync_db():
+    SQLModel.metadata.create_all(bind=sync_engine)
+
+
+def get_sync_db():
+    with Session(sync_engine) as session:
+        yield session
 
 
 async_engine = create_async_engine(
