@@ -53,10 +53,10 @@ async def can_access(db: AsyncSession, resource: str, action: str, role: str):
 
 async def get_current_user(
     request: Request,
+    db: Annotated[AsyncSession, Depends(get_db)],
     api_key: Annotated[str | None, Header()] = None,
     token: Annotated[str | None, Depends(oauth2_scheme)] = None,
 ):
-    db: AsyncSession = await anext(get_db())
     user = None
     if api_key:
         try:
