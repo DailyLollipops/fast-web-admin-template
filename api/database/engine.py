@@ -31,4 +31,4 @@ def get_redis():
     try:
         yield client
     finally:
-        pass
+        client.close()
