@@ -42,6 +42,23 @@ services:
     networks:
       - app_network
 
+  worker:
+    build:
+      target: worker
+    volumes:
+      - ./api:/workspace/app
+    command: uv run rq worker email notification
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - app_network
+    environment:
+      <<:
+        - *python-env
+        - *mysql-env
+        - *redis-env
+
   api:
     build:
       target: api

@@ -1,4 +1,4 @@
-FROM debian:bookworm-slim AS api
+FROM debian:bookworm-slim AS base_python
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -11,8 +11,15 @@ RUN apt-get update \
 
 WORKDIR /workspace/app
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
-    && uv venv /workspace \
-    && uv sync
+    && uv venv /workspace
+
+FROM base_python AS api
+
+RUN uv sync --group api
+
+FROM base_python AS worker
+
+RUN uv sync --group worker
 
 FROM node:22-alpine AS web
 

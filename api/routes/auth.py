@@ -12,11 +12,13 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from itsdangerous import URLSafeTimedSerializer
 from passlib.context import CryptContext
 from pydantic import BaseModel
+from rq import Queue
 from settings import settings
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
-
-from .utils import emailutil, notificationutil
+from worker.queue import get_email_queue, get_notification_queue
+from worker.tasks.email import send_email
+from worker.tasks.notification import notify_role, notify_user
 
 
 router = APIRouter()
@@ -186,6 +188,8 @@ async def get_setting(db: AsyncSession, name: str):
 async def register_user(
     data: RegisterForm,
     db: Annotated[AsyncSession, Depends(get_async_db)],
+    notification_queue: Annotated[Queue, Depends(get_notification_queue)],
+    email_queue: Annotated[Queue, Depends(get_email_queue)]
 ) -> Token:
     if data.password != data.confirm_password:
         raise HTTPException(
@@ -220,15 +224,16 @@ async def register_user(
 
     access_token = create_access_token(data={'sub': data.email}, salt='user-auth')
 
-    await notificationutil.notify_role(
-        db=db,
+    notification_queue.enqueue(
+        notify_role,
         triggered_by=new_user.id,
         roles=['admin'],
         title='New user has been created',
         body=f'A new user has been created by an admin with email: {new_user.email}'
     )
-    await notificationutil.notify_user(
-        db=db,
+
+    notification_queue.enqueue(
+        notify_user,
         triggered_by=2,
         user_id=new_user.id,
         title='Welcome to the app',
@@ -257,8 +262,9 @@ async def register_user(
             'name': new_user.name,
             'verification_url': verification_url
         }
-        await emailutil.send_email(
-            db=db,
+
+        email_queue.enqueue(
+            send_email,
             template=email_verification_template_path,
             data=new_data,
             subject='Verify your email address',

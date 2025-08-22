@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager, contextmanager
+
 from redis import Redis
 from settings import settings
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -5,7 +7,14 @@ from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 
-sync_engine = create_engine(settings.DATABASE_URL, echo=False)
+sync_engine = create_engine(
+    settings.DATABASE_URL,
+    echo=False,
+    pool_size=10,
+    max_overflow=20,
+    pool_timeout=60,
+    pool_recycle=1800,
+)
 
 
 def init_sync_db():
@@ -26,13 +35,16 @@ async_engine = create_async_engine(
     pool_recycle=1800,
 )
 
+
 async def init_async_db():
     async with async_engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
 
+
 async def get_async_db():
     async with AsyncSession(async_engine) as session:
         yield session
+
 
 def get_redis():
     client = Redis(
@@ -44,3 +56,25 @@ def get_redis():
         yield client
     finally:
         client.close()
+
+
+@contextmanager
+def get_sync_session():
+    session = Session(sync_engine)
+    try:
+        yield session
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+@asynccontextmanager
+async def get_async_session():
+    async with AsyncSession(async_engine) as session:
+        try:
+            yield session
+        except Exception:
+            await session.rollback()
+            raise

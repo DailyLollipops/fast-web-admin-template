@@ -24,11 +24,11 @@ dependencies = [
     "pydantic-settings>=2.10.1",
     "pyjwt>=2.10.1",
     "pymysql>=1.1.1",
-    "pyotp>=2.9.0",
     "python-jose[cryptography]>=3.5.0",
     "pytz>=2025.2",
     "redis>=6.3.0",
     "requests>=2.32.4",
+    "rq>=2.5.0",
     "sqlmodel>=0.0.24",
 ]
 
@@ -97,6 +97,40 @@ quote-style = "single"
 indent-style = "space"
 
 [dependency-groups]
+api = [
+    "aiomysql>=0.2.0",
+    "alembic>=1.16.4",
+    "bcrypt>=4.3.0",
+    "click>=8.2.1",
+    "faker>=37.5.3",
+    "fastapi-mail>=1.5.0",
+    "fastapi[standard]>=0.116.1",
+    "granian>=2.5.0",
+    "itsdangerous>=2.2.0",
+    "jinja2>=3.1.6",
+    "loguru>=0.7.3",
+    "mysql-connector-python>=9.4.0",
+    "passlib>=1.7.4",
+    "pillow>=11.3.0",
+    "pydantic>=2.11.7",
+    "pydantic-settings>=2.10.1",
+    "pyjwt>=2.10.1",
+    "pymysql>=1.1.1",
+    "python-jose[cryptography]>=3.5.0",
+    "pytz>=2025.2",
+    "redis>=6.3.0",
+    "requests>=2.32.4",
+    "rq>=2.5.0",
+    "sqlmodel>=0.0.24",
+]
 dev = [
+    "click>=8.2.1",
+    "nltk>=3.9.1",
     "ruff>=0.12.8",
+]
+worker = [
+    "loguru>=0.7.3",
+    "redis>=6.3.0",
+    "rq>=2.5.0",
+    "sqlmodel>=0.0.24",
 ]
