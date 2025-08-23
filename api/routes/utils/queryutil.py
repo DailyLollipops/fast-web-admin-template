@@ -27,7 +27,7 @@ class Operands(str, Enum):
 
 class GetListFilter(BaseModel):
     field: str
-    op: Operands
+    operator: Operands
     value: Any
 
 
@@ -198,23 +198,23 @@ async def get_list[T: SQLModel](
                 continue
             
             column = getattr(model_cls, filter.field)
-            if filter.op == Operands.eq:
+            if filter.operator == Operands.eq:
                 q = q.where(column == filter.value)
-            elif filter.op == Operands.neq:
+            elif filter.operator == Operands.neq:
                 q = q.where(column != filter.value)
-            elif filter.op == Operands.gt:
+            elif filter.operator == Operands.gt:
                 q = q.where(column > filter.value)
-            elif filter.op == Operands.gte:
+            elif filter.operator == Operands.gte:
                 q = q.where(column >= filter.value)
-            elif filter.op == Operands.lt:
+            elif filter.operator == Operands.lt:
                 q = q.where(column < filter.value)
-            elif filter.op == Operands.lte:
+            elif filter.operator == Operands.lte:
                 q = q.where(column <= filter.value)
-            elif filter.op == Operands.in_:
+            elif filter.operator == Operands.in_:
                 if isinstance(filter.value, list) and filter.value:
                     if column := getattr(model_cls, filter.field, None):
                         q = q.where(column.in_(filter.value))
-            elif filter.op == Operands.not_in:
+            elif filter.operator == Operands.not_in:
                 if isinstance(filter.value, list) and filter.value:
                     if column := getattr(model_cls, filter.field, None):
                         q = q.where(~column.in_(filter.value))
