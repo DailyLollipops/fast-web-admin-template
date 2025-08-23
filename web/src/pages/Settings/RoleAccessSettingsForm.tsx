@@ -13,15 +13,17 @@ import {
   RaRecord,
 } from "react-admin";
 import {
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
   Typography,
   Box,
   IconButton,
   Tooltip,
   Button,
-  Card,
-  CardContent,
 } from "@mui/material";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useFormContext, useFieldArray } from "react-hook-form";
 
@@ -29,6 +31,10 @@ type RoleSetting = {
   id?: number;
   role: string;
   permissions: string[];
+};
+
+type FormValues = {
+  roles: RoleSetting[];
 };
 
 type RoleAccessData = RoleSetting[];
@@ -110,7 +116,7 @@ export const RoleAccessSettingsForm = () => {
   };
 
   const RolesFieldArray = () => {
-    const { control } = useFormContext();
+    const { control } = useFormContext<FormValues>();
     const { fields, append, remove } = useFieldArray({
       control,
       name: "roles",
@@ -119,31 +125,49 @@ export const RoleAccessSettingsForm = () => {
     return (
       <Box display="flex" flexDirection="column" gap={2}>
         {fields.map((field, index) => (
-          <Card key={field.id} variant="outlined">
-            <CardContent>
+          <Accordion key={field.id}>
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon />}
+              aria-controls={`role-${index}-content`}
+              id={`role-${index}-header`}
+            >
               <Box
                 display="flex"
-                justifyContent="space-between"
                 alignItems="center"
-                mb={2}
+                justifyContent="space-between"
+                width="100%"
               >
+                <Typography sx={{ fontWeight: 500 }}>
+                  {field.role || `Role ${index + 1}`}
+                </Typography>
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    remove(index);
+                  }}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Box>
+            </AccordionSummary>
+
+            <AccordionDetails>
+              <Box display="flex" flexDirection="column" gap={2}>
                 <TextInput
                   source={`roles.${index}.role`}
                   label="Role Name"
                   fullWidth
                 />
-                <IconButton onClick={() => remove(index)}>
-                  <DeleteIcon />
-                </IconButton>
-              </Box>
 
-              <ArrayInput source={`roles.${index}.permissions`}>
-                <SimpleFormIterator>
-                  <TextInput source="" label="Permission" fullWidth />
-                </SimpleFormIterator>
-              </ArrayInput>
-            </CardContent>
-          </Card>
+                <ArrayInput source={`roles.${index}.permissions`}>
+                  <SimpleFormIterator>
+                    <TextInput source="" label="Permission" fullWidth />
+                  </SimpleFormIterator>
+                </ArrayInput>
+              </Box>
+            </AccordionDetails>
+          </Accordion>
         ))}
 
         <Button
@@ -162,7 +186,7 @@ export const RoleAccessSettingsForm = () => {
       <ResourceContextProvider value="role_access_controls">
         <Box display="flex" alignItems="center" gap={1} mb={2}>
           <Typography variant="h6" sx={{ fontWeight: 500 }}>
-            Role Access Control Settings
+            Permission Settings
           </Typography>
           <Tooltip title="Permission format: <resource>.<action>. Use * for all.">
             <IconButton size="small" sx={{ p: 0.5 }}>
