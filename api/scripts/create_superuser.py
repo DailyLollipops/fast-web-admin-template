@@ -12,7 +12,7 @@ import re
 from getpass import getpass
 
 import bcrypt
-from database import get_sync_db
+from database import get_sync_session
 from database.models.user import User
 
 
@@ -62,9 +62,9 @@ def main():
         verified=True,
     )
 
-    db = next(get_sync_db())
-    db.add(user)
-    db.commit()
+    with get_sync_session() as session:
+        session.add(user)
+        session.commit()
 
     print('✅  Account created successfully!')
 

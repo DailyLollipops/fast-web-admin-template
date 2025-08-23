@@ -3,7 +3,7 @@ import re
 
 import click
 from database import factory
-from database.engine import get_sync_db
+from database.engine import get_sync_session
 from sqlmodel import select
 
 
@@ -33,20 +33,20 @@ def seed_random(num: int, force: bool, only: tuple[str] | None = None):
             if re.search(r'^(?!Base).+Factory$', f)
         ]
 
-    db = next(get_sync_db())
-    all_instances = []
-    for f in factories:
-        instances = f().make(num)
-        print(f'Generated {len(instances)} instances from {f}')
-        if instances and not force:
-            if db.exec(select(instances[0].__class__)).first():
-                print('Table has populated data and --force is not set. Skipping seeding...')
-                continue
-        all_instances.extend(instances)
+    with get_sync_session() as session:
+        all_instances = []
+        for f in factories:
+            instances = f().make(num)
+            print(f'Generated {len(instances)} instances from {f}')
+            if instances and not force:
+                if session.exec(select(instances[0].__class__)).first():
+                    print('Table has populated data and --force is not set. Skipping seeding...')
+                    continue
+            all_instances.extend(instances)
 
-    if all_instances:
-        db.add_all(all_instances)
-        db.commit()
+        if all_instances:
+            session.add_all(all_instances)
+            session.commit()
 
 
 @click.command
@@ -66,20 +66,20 @@ def seed_list(num: int, force: bool, only: tuple[str] | None = None):
             if re.search(r'^(?!Base).+Factory$', f)
         ]
     
-    db = next(get_sync_db())
-    all_instances = []
-    for f in factories:
-        instances = f().make_from_list(num)
-        print(f'Generated {len(instances)} instances from {f}')
-        if instances and not force:
-            if db.exec(select(instances[0].__class__)).first():
-                print('Table has populated data and --force is not set. Skipping seeding...')
-                continue
-        all_instances.extend(instances)
-    
-    if all_instances:
-        db.add_all(all_instances)
-        db.commit()
+    with get_sync_session() as session:
+        all_instances = []
+        for f in factories:
+            instances = f().make_from_list(num)
+            print(f'Generated {len(instances)} instances from {f}')
+            if instances and not force:
+                if session.exec(select(instances[0].__class__)).first():
+                    print('Table has populated data and --force is not set. Skipping seeding...')
+                    continue
+            all_instances.extend(instances)
+        
+        if all_instances:
+            session.add_all(all_instances)
+            session.commit()
 
 cli.add_command(seed_random)
 cli.add_command(seed_list)
