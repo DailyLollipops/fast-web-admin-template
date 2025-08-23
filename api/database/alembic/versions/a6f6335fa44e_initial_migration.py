@@ -23,12 +23,13 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    users_table = op.create_table('users',
+    op.create_table('users',
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column('email', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column('role', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column('password', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+        sa.Column('profile', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
         sa.Column('verified', sa.Boolean(), nullable=False),
         sa.Column('api', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
         sa.Column('created_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),

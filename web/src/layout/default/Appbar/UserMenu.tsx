@@ -9,31 +9,43 @@ import {
   Typography,
 } from "@mui/material";
 import SettingsIcon from "@mui/icons-material/Settings";
-import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import VerifiedIcon from "@mui/icons-material/Verified";
 import { Link } from "react-router-dom";
 import { snakeToCapitalizedWords, stringToMuiColor } from "../../../utils";
+import { API_URL } from "../../../constants";
 
 export const UserMenu = () => {
   const { identity } = useGetIdentity();
+  console.log("Identity:", identity);
 
-  const NameAvatarIcon = () => (
-    <Avatar
-      sx={{
-        width: 32,
-        height: 32,
-        bgcolor: stringToMuiColor(identity?.name ?? "Anonymous"),
-      }}
-    >
-      {identity?.name?.charAt(0) ?? "A"}
-    </Avatar>
-  );
+  const ProfileIcon = ({ size }: { size: number }) => {
+    if (identity?.profile) {
+      return (
+        <Avatar
+          src={`${API_URL}${identity.profile}`}
+          sx={{ width: size, height: size }}
+        />
+      );
+    }
+
+    return (
+      <Avatar
+        sx={{
+          width: size,
+          height: size,
+          bgcolor: stringToMuiColor(identity?.name ?? "Anonymous"),
+        }}
+      >
+        {identity?.name?.charAt(0).toUpperCase() ?? "A"}
+      </Avatar>
+    );
+  };
 
   return (
-    <RaUserMenu icon={<NameAvatarIcon />}>
+    <RaUserMenu icon={<ProfileIcon size={32} />}>
       {/* Profile Info */}
       <Box display="flex" flexDirection="row" padding={1} alignItems="center">
-        <AccountCircleIcon sx={{ height: 48, width: 48 }} />
+        <ProfileIcon size={48} />
         <Box display="flex" flexDirection="column" marginLeft={1} gap={0}>
           <Typography variant="subtitle2" marginLeft={1}>
             {identity?.name ?? "Anonymous"}
@@ -63,17 +75,6 @@ export const UserMenu = () => {
             </Typography>
           </Box>
         </Box>
-        {/* <ListItemIcon>
-          <AccountCircleIcon fontSize="large" />
-        </ListItemIcon>
-        <ListItemText
-          primary={identity?.name ?? "Anonymous"}
-          secondary={
-            <Typography variant="caption" color="text.secondary">
-              {snakeToCapitalizedWords(identity?.role ?? "User")}
-            </Typography>
-          }
-        /> */}
       </Box>
       <Divider />
 

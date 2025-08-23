@@ -32,7 +32,12 @@ def make_crud_schemas[T: SQLModel](
             if primary_key := getattr(field, 'primary_key', None):
                 if primary_key is True:
                     continue
-            fields[name] = (field.annotation, field.default if field.default is not None else ...)
+            default = ...
+            if getattr(field, 'nullable', False) is True:
+                default = None
+            elif field.default is not None:
+                default = field.default
+            fields[name] = (field.annotation, default)
         return fields
 
     def get_update_fields() -> dict:

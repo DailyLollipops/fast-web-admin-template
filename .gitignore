@@ -10,3 +10,7 @@ supervisord.pid
 
 # Logs
 *.log
+
+# Static files
+!api/static/.gitkeep
+api/static/*

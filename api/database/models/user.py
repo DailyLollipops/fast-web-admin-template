@@ -13,8 +13,9 @@ class User(SQLModel, table=True):
     email: str = Field(unique=True)
     role: str = Field(default='user')
     password: str = Field(...)
+    profile: str | None = Field(nullable=True, default=None)
     verified: bool = Field(default=False)
-    api: str = Field(nullable=True, default=None)
+    api: str | None = Field(nullable=True, default=None)
     created_at: datetime = Field(default_factory=lambda: datetime.now())
     updated_at: datetime = Field(
         default_factory=lambda: datetime.now(),
