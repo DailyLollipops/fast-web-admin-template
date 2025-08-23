@@ -1,4 +1,5 @@
 import json
+from collections.abc import Callable
 from enum import Enum
 from typing import Any, TypeVar
 
@@ -7,9 +8,11 @@ from pydantic import BaseModel, ValidationError, model_validator
 from sqlalchemy.orm import selectinload
 from sqlmodel import SQLModel, asc, desc, func, inspect, select
 from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlmodel.sql.expression import SelectOfScalar
 
 
 T = TypeVar('T', bound=SQLModel)
+Q = TypeVar('Q')
 
 class Operands(str, Enum):
     eq = '=='
@@ -132,8 +135,19 @@ async def create_many[T: SQLModel](db: AsyncSession, data: list[T]):
     return data
 
 
-async def get_one[T: SQLModel](db: AsyncSession, model_cls: type[T], id: int):
-    if result := await db.get(model_cls, id):
+async def get_one[T: SQLModel](
+    db: AsyncSession,
+    model_cls: type[T],
+    id: int,
+    transform: Callable[[SelectOfScalar[T]], SelectOfScalar[T]] | None = None,
+):
+    q = select(model_cls).where(model_cls.id == id) # type: ignore
+
+    if transform is not None:
+        q = transform(q)
+
+    result = await db.exec(q)
+    if result := result.first():
         return result
     
     raise HTTPException(
@@ -142,11 +156,20 @@ async def get_one[T: SQLModel](db: AsyncSession, model_cls: type[T], id: int):
     )
 
 
-async def get_many[T: SQLModel](db: AsyncSession, model_cls: type[T], ids: list[int]):
+async def get_many[T: SQLModel](
+    db: AsyncSession,
+    model_cls: type[T],
+    ids: list[int],
+    transform: Callable[[SelectOfScalar[T]], SelectOfScalar[T]] | None = None,
+):
     q = (
         select(model_cls)
         .where(model_cls.id.in_(ids)) # type: ignore
     )
+
+    if transform is not None:
+        q = transform(q)
+
     result = await db.exec(q)
     return result.all()
 
@@ -155,6 +178,7 @@ async def get_list[T: SQLModel](
     db: AsyncSession,
     model_cls: type[T],
     params: GetListParams,
+    transform: Callable[[SelectOfScalar[T]], SelectOfScalar[T]] | None = None,
 ):
     q = select(model_cls)
     
@@ -164,6 +188,9 @@ async def get_list[T: SQLModel](
     for embed in embeds:
         if hasattr(model_cls, embed):
             q = q.options(selectinload(getattr(model_cls, embed)))
+
+    if transform is not None:
+        q = transform(q)
 
     if params.filters:
         for filter in params.filters:
