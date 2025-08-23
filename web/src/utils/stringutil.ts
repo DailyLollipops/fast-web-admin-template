@@ -1,3 +1,5 @@
+import { format } from "date-fns";
+
 const colorPalette = [
   "primary",
   "secondary",
@@ -58,4 +60,23 @@ export function snakeToCapitalizedWords(snake: string): string {
     .split("_")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
+}
+
+export function getRelativeDate(date: Date): string {
+  const now = new Date();
+  const diffTime = now.getTime() - date.getTime();
+  const differenceInDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  if (differenceInDays === 0) {
+    return "Today";
+  } else if (differenceInDays === 1) {
+    return "Yesterday";
+  } else if (differenceInDays < 7) {
+    return `${differenceInDays} days ago`;
+  } else if (differenceInDays < 30) {
+    const weeks = Math.floor(differenceInDays / 7);
+    return `${weeks} week${weeks > 1 ? "s" : ""} ago`;
+  } else {
+    return format(date, "MMMM dd, yyyy");
+  }
 }

@@ -4,4 +4,5 @@ export {
   toCurrencyString,
   formatCurrencyShort,
   snakeToCapitalizedWords,
+  getRelativeDate,
 } from "./stringutil";
