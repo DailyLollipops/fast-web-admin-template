@@ -35,7 +35,7 @@ export const Settings = () => {
   };
 
   return (
-    <Card>
+    <Card sx={{ minHeight: "calc(100vh - 48px)" }}>
       <Title title="Application Settings" />
       <CardContent>
         <Typography variant="h6" fontWeight="500" gutterBottom>
