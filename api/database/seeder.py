@@ -1,3 +1,10 @@
+# /// script
+# requires-python = ">=3.12"
+# dependencies = [
+#     "aiomysql",
+# ]
+# ///
+
 # pyright: reportCallIssue=false
 import re
 

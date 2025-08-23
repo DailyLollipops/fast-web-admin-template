@@ -1,6 +1,7 @@
 # /// script
 # requires-python = ">=3.12"
 # dependencies = [
+#     "aiomysql",
 #     "bcrypt",
 #     "pydantic-settings",
 #     "pymysql",
