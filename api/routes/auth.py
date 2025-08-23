@@ -32,6 +32,7 @@ class Token(BaseModel):
 
 
 async def can_access(db: AsyncSession, resource: str, action: str, role: str):
+    auth_resources = ['me.*']
     q = select(RoleAccessControl).where(RoleAccessControl.role == role)
     q_result = await db.exec(q)
     result = q_result.first()
@@ -39,8 +40,9 @@ async def can_access(db: AsyncSession, resource: str, action: str, role: str):
     if not result:
         return False
     
+    permissions = result.permissions + auth_resources
     # Permission format: <resource>.<action>
-    for permission in result.permissions:
+    for permission in permissions:
         if permission == '*':
             return True
 
@@ -93,7 +95,8 @@ async def get_current_user(
         'PUT': 'update',
         'DELETE': 'delete',
     }
-    resource = request.url.path.split('/')[1]
+
+    resource = request.url.path.split('/')[2]
     action = action_map.get(request.method, '')
     if not await can_access(db, resource, action, user.role):
         raise HTTPException(
