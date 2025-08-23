@@ -63,7 +63,7 @@ def generate_model_route(
     update_login_required: bool,
     delete_login_required: bool
 ):
-    built_ins = ['user', 'notification']
+    built_ins = ['user', 'notification', 'application_setting', 'role_access_control']
     if model in built_ins:
         raise Exception('Cannot generate routes for built in models')
 
