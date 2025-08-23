@@ -80,6 +80,7 @@ def upgrade() -> None:
         sa.Column('triggered_by', sa.Integer(), nullable=False),
         sa.Column('title', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column('body', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+        sa.Column('category', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column('seen', sa.Boolean(), nullable=False),
         sa.Column('created_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
         sa.Column('updated_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False, onupdate=sa.text('CURRENT_TIMESTAMP')),
