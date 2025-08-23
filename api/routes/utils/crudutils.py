@@ -12,29 +12,38 @@ class ActionResponse(BaseModel):
 
 
 def make_crud_schemas[T: SQLModel](
-    model_cls: type[T]
+    model_cls: type[T],
+    addtl_excluded_create_fields: list[str] | None = None,
+    addtl_excluded_update_fields: list[str] | None = None,
 ) -> tuple[type[BaseModel], type[BaseModel], type[BaseModel], type[BaseModel]]:
     """
     Generate Pydantic CRUD schemas dynamically from a SQLModel class.
     Returns: (Create, Update, Response, ListResponse)
     """
+    if addtl_excluded_update_fields is None:
+        addtl_excluded_update_fields = []
+    if addtl_excluded_create_fields is None:
+        addtl_excluded_create_fields = []
+    def get_fields(exclude: list[str]) -> dict:
+        fields = {}
+        for name, field in model_cls.model_fields.items():
+            if name in exclude:
+                continue
+            if primary_key := getattr(field, 'primary_key', None):
+                if primary_key is True:
+                    continue
+            fields[name] = (field.annotation, field.default if field.default is not None else ...)
+        return fields
+
     fields = model_cls.model_fields
-    excluded_create_fields = ['modified_by_id', 'created_at', 'updated_at']
-    excluded_update_fields = ['created_at', 'updated_at']
+    excluded_create_fields = ['modified_by_id', 'created_at', 'updated_at'] + (addtl_excluded_create_fields or [])
+    excluded_update_fields = ['created_at', 'updated_at'] + (addtl_excluded_update_fields or [])
     excluded_response_fields = ['password', 'api']
 
-    create_fields = {
-        name: (field.annotation, field.default if field.default is not None else ...)
-        for name, field in fields.items()
-        if field.primary_key is not True and name not in excluded_create_fields
-    }
+    create_fields = get_fields(excluded_create_fields)
     CreateSchema = create_model(f'{model_cls.__name__}Create', **create_fields) # type: ignore
 
-    update_fields = {
-        name: (field.annotation, None)
-        for name, field in fields.items()
-        if field.primary_key is not True and name not in excluded_update_fields
-    }
+    update_fields = get_fields(excluded_update_fields)
     UpdateSchema = create_model(f'{model_cls.__name__}Update', **update_fields) # type: ignore
 
     response_fields = {

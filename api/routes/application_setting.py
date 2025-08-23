@@ -17,7 +17,11 @@ router = APIRouter()
 TAGS: list[str | Enum] = ['Application Setting']
 
 
-CreateSchema, UpdateSchema, ResponseSchema, ListResponseSchema = make_crud_schemas(ApplicationSetting)
+CreateSchema, UpdateSchema, ResponseSchema, ListResponseSchema = make_crud_schemas(
+    ApplicationSetting,
+    addtl_excluded_create_fields=['modified_by_id'],
+    addtl_excluded_update_fields=['modified_by_id'],
+)
 ApplicationSettingCreate = CreateSchema
 ApplicationSettingUpdate = UpdateSchema
 
@@ -30,7 +34,6 @@ async def create_application_setting(
 ):
     try:
         fields = data.model_dump()
-        fields.pop('modified_by_id')
         obj = ApplicationSetting(
             **fields,
             modified_by_id=current_user.id
@@ -90,8 +93,12 @@ async def update_application_setting(
     id: int,
     data: ApplicationSettingUpdate,
 ):
+    class ModifiedData(ApplicationSettingUpdate):
+        modified_by_id: int
+
     try:
-        result = await queryutil.update_one(db, ApplicationSetting, id, data)
+        modified = ModifiedData(**data.model_dump(), modified_by_id=current_user.id)
+        result = await queryutil.update_one(db, ApplicationSetting, id, modified)
         return result
     except HTTPException as ex:
         raise ex
