@@ -97,12 +97,12 @@ export const ApplicationSettingsForm = () => {
 
   return (
     <>
-      <Typography variant="h6" sx={{ fontWeight: "500", mb: 2 }}>
+      <Typography variant="subtitle1" sx={{ fontWeight: "500", mb: 2 }}>
         Application Settings
       </Typography>
       <Form>
         <Box display="flex" alignItems="center" gap={1}>
-          <Typography variant="subtitle1" sx={{ fontWeight: "500" }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: "500" }}>
             SMTP Settings
           </Typography>
           <Tooltip title="Required for user email verification.">
@@ -159,7 +159,7 @@ export const ApplicationSettingsForm = () => {
             />
           </Grid>
         </Grid>
-        <Typography variant="subtitle1" sx={{ fontWeight: "500" }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: "500" }}>
           User Authentication
         </Typography>
         <Grid container columnGap={1} mb={2}>
@@ -178,7 +178,7 @@ export const ApplicationSettingsForm = () => {
             />
           </Grid>
         </Grid>
-        <Typography variant="subtitle1" sx={{ fontWeight: "500" }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: "500" }}>
           Notifications
         </Typography>
         <Grid container columnGap={1} mb={2}>
@@ -200,7 +200,7 @@ export const ApplicationSettingsForm = () => {
         <Grid container gap={2}>
           {unmappedSettings.length > 0 && (
             <>
-              <Typography variant="subtitle1" sx={{ fontWeight: "500" }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: "500" }}>
                 Other Settings
               </Typography>
               <Grid container columnGap={1}>

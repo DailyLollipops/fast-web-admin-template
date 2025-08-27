@@ -137,7 +137,7 @@ export const RoleAccessSettingsForm = () => {
                 justifyContent="space-between"
                 width="100%"
               >
-                <Typography sx={{ fontWeight: 500 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 500 }}>
                   {field.role || `Role ${index + 1}`}
                 </Typography>
                 <IconButton
@@ -185,7 +185,7 @@ export const RoleAccessSettingsForm = () => {
     <Form defaultValues={{ roles: initialData ?? [] }}>
       <ResourceContextProvider value="role_access_controls">
         <Box display="flex" alignItems="center" gap={1} mb={2}>
-          <Typography variant="h6" sx={{ fontWeight: 500 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
             Permission Settings
           </Typography>
           <Tooltip title="Permission format: <resource>.<action>. Use * for all.">
