@@ -21,7 +21,7 @@ def make_crud_schemas[T: SQLModel](
     Returns: (Create, Update, Response, ListResponse)
     """
     excluded_create_fields = ['modified_by_id', 'created_at', 'updated_at'] + (addtl_excluded_create_fields or [])
-    excluded_update_fields = ['created_at', 'updated_at'] + (addtl_excluded_update_fields or [])
+    excluded_update_fields = ['password', 'created_at', 'updated_at'] + (addtl_excluded_update_fields or [])
     excluded_response_fields = ['password', 'api']
 
     def get_create_fields() -> dict:

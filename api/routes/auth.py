@@ -31,6 +31,12 @@ class Token(BaseModel):
     token_type: str
 
 
+class PasswordChangeRequest(BaseModel):
+    current_password: str
+    new_password: str
+    confirm_password: str
+
+
 async def can_access(db: AsyncSession, resource: str, action: str, role: str):
     auth_resources = ['me.*']
     q = select(RoleAccessControl).where(RoleAccessControl.role == role)
@@ -321,3 +327,23 @@ async def verify_email(
     db.add(user)
     await db.commit()
     return ActionResponse(success=True, message='Email successfully verified')
+
+
+@router.post('/auth/reset_password', response_model=ActionResponse, tags=['Authentication'])
+async def reset_password(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_async_db)],
+    data: PasswordChangeRequest,
+):
+    user = await authenticate_user(current_user.email, data.current_password, db)
+
+    if not user:
+        raise HTTPException(status_code=401, detail='Current password is incorrect')
+    if data.new_password != data.confirm_password:
+        raise HTTPException(status_code=400, detail='New passwords do not match')
+    hashed_password = bcrypt.hashpw(data.new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+    user.password = hashed_password
+    db.add(user)
+    await db.commit()
+    return ActionResponse(success=True, message='Password successfully changed')
