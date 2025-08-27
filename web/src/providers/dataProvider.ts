@@ -219,6 +219,14 @@ export const dataProvider: DataProvider = withLifecycleCallbacks(
 
       return { data: json };
     },
+
+    fetchJson: async (
+      url: string,
+      options: fetchUtils.Options | undefined = {},
+    ) => {
+      const fullUrl = `${API_URL}${url}`;
+      return await httpClient(fullUrl, options);
+    },
   },
   [
     // Add lifecycle callbacks here
