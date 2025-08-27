@@ -5,6 +5,7 @@ import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended"
 import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 import globals from "globals";
+import pluginImport from "eslint-plugin-import";
 
 export default defineConfig([
   globalIgnores(["**/node_modules", "**/dist"]),
@@ -12,6 +13,7 @@ export default defineConfig([
     name: "eslint-js-recommended-rules",
     plugins: {
       js,
+      import: pluginImport,
     },
     extends: ["js/recommended"],
   },
@@ -38,6 +40,12 @@ export default defineConfig([
     settings: {
       react: {
         version: "detect",
+      },
+      "import/resolver": {
+        typescript: {
+          alwaysTryTypes: true,
+          project: "./tsconfig.json",
+        },
       },
     },
   },
