@@ -62,8 +62,6 @@ services:
   api:
     build:
       target: api
-    ports:
-      - 8000:8000
     volumes:
       - ./api:/workspace/app
     command: uv run fastapi dev /workspace/app/main.py --host 0.0.0.0 --port 8000
@@ -84,8 +82,6 @@ services:
   web:
     build:
       target: web
-    ports:
-      - 5173:5173
     volumes:
       - ./web:/workspace/app
       - /workspace/app/node_modules
@@ -120,8 +116,6 @@ services:
   pr-api:
     build:
       target: api
-    ports:
-      - 8000:8000
     volumes:
       - ./api:/workspace/app
     command: uv run fastapi run /workspace/app/main.py --host 0.0.0.0 --port 8000
@@ -142,8 +136,6 @@ services:
   pr-web:
     build:
       target: web_prod
-    ports:
-      - 5173:5173
     command: serve -s dist -l 5173
     depends_on:
       - pr-api
