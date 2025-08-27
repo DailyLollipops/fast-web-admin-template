@@ -1,0 +1,176 @@
+import { useState } from "react";
+import {
+  Box,
+  Button,
+  Card,
+  Collapse,
+  IconButton,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Typography,
+} from "@mui/material";
+import LockResetIcon from "@mui/icons-material/LockReset";
+import EmailIcon from "@mui/icons-material/Email";
+import SecurityIcon from "@mui/icons-material/Security";
+import LogoutIcon from "@mui/icons-material/Logout";
+import VpnKeyIcon from "@mui/icons-material/VpnKey";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import { ResetPasswordDialog } from "./ResetPasswordDialog";
+
+export const AccountSecurity = () => {
+  const [showResetPasswordDialog, setOpenResetDialog] = useState(false);
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [showApiKey, setShowApiKey] = useState(false);
+
+  const handleNotImplemented = () => {
+    alert("This feature is not implemented yet.");
+  };
+
+  const handleGenerateApiKey = () => {
+    const newKey =
+      Math.random().toString(36).slice(2) + Date.now().toString(36);
+    setApiKey(newKey);
+    setShowApiKey(true);
+  };
+
+  const handleCopy = () => {
+    if (apiKey) {
+      navigator.clipboard.writeText(apiKey);
+      alert("API Key copied to clipboard!");
+    }
+  };
+
+  return (
+    <>
+      <ResetPasswordDialog
+        open={showResetPasswordDialog}
+        onClose={() => setOpenResetDialog(false)}
+      />
+
+      <Card
+        sx={{
+          p: 2,
+          width: "100%",
+          mt: 3,
+        }}
+      >
+        <List sx={{ p: 0 }}>
+          <ListItem
+            secondaryAction={
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => setOpenResetDialog(true)}
+              >
+                Reset
+              </Button>
+            }
+          >
+            <ListItemIcon>
+              <LockResetIcon />
+            </ListItemIcon>
+            <ListItemText
+              primary="Reset Password"
+              secondary="Reset your account password."
+            />
+          </ListItem>
+
+          <ListItem
+            secondaryAction={
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleNotImplemented}
+              >
+                Change
+              </Button>
+            }
+          >
+            <ListItemIcon>
+              <EmailIcon />
+            </ListItemIcon>
+            <ListItemText
+              primary="Reset Email"
+              secondary="Update your recovery or login email address."
+            />
+          </ListItem>
+
+          <ListItem
+            secondaryAction={
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleNotImplemented}
+              >
+                Enable
+              </Button>
+            }
+          >
+            <ListItemIcon>
+              <SecurityIcon />
+            </ListItemIcon>
+            <ListItemText
+              primary="Enable Two-Factor Auth"
+              secondary="Add an extra layer of security to your account."
+            />
+          </ListItem>
+
+          <ListItem
+            secondaryAction={
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleGenerateApiKey}
+              >
+                {apiKey ? "Regenerate" : "Generate"}
+              </Button>
+            }
+          >
+            <ListItemIcon>
+              <VpnKeyIcon />
+            </ListItemIcon>
+            <ListItemText
+              primary="API Key"
+              secondary="Generate and manage API keys for external integrations."
+            />
+          </ListItem>
+          <Collapse in={showApiKey} timeout="auto" unmountOnExit>
+            <Box
+              display="flex"
+              alignItems="center"
+              justifyContent="space-between"
+              px={6}
+              py={1}
+              sx={{ bgcolor: "grey.100", borderRadius: 1, mt: 1 }}
+            >
+              <Typography variant="body2" sx={{ wordBreak: "break-all" }}>
+                {apiKey}
+              </Typography>
+              <IconButton onClick={handleCopy} size="small">
+                <ContentCopyIcon fontSize="small" />
+              </IconButton>
+            </Box>
+          </Collapse>
+
+          <ListItem
+            secondaryAction={
+              <Button variant="outlined" color="error" size="small">
+                Logout
+              </Button>
+            }
+          >
+            <ListItemIcon>
+              <LogoutIcon color="error" />
+            </ListItemIcon>
+            <ListItemText
+              primary="Logout of All Devices"
+              secondary="Sign out from every active session across devices."
+            />
+          </ListItem>
+        </List>
+      </Card>
+    </>
+  );
+};

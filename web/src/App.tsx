@@ -10,7 +10,7 @@ import { Route } from "react-router-dom";
 import PeopleIcon from "@mui/icons-material/People";
 import { DefaultLayout } from "./layout";
 import { dataProvider, authProvider } from "./providers";
-import { Dashboard, Settings, AboutApp } from "./pages";
+import { Dashboard, Settings, Profile, AboutApp } from "./pages";
 
 export const App = () => (
   <Admin
@@ -28,6 +28,7 @@ export const App = () => (
     />
     <CustomRoutes>
       <Route path="/settings" element={<Settings />} />
+      <Route path="/profile" element={<Profile />} />
       <Route path="/about" element={<AboutApp />} />
     </CustomRoutes>
   </Admin>
