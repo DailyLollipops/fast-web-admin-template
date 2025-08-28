@@ -16,7 +16,6 @@ import { API_URL } from "../../../constants";
 
 export const UserMenu = () => {
   const { identity } = useGetIdentity();
-  console.log("Identity:", identity);
 
   const ProfileIcon = ({ size }: { size: number }) => {
     if (identity?.profile) {
