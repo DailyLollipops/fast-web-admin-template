@@ -1,16 +1,18 @@
-import {
-  Admin,
-  CustomRoutes,
-  Resource,
-  ListGuesser,
-  ShowGuesser,
-  EditGuesser,
-} from "react-admin";
+import { Admin, CustomRoutes, Resource } from "react-admin";
 import { Route } from "react-router-dom";
 import PeopleIcon from "@mui/icons-material/People";
-import { DefaultLayout } from "./layout";
-import { dataProvider, authProvider } from "./providers";
-import { Dashboard, Settings, Profile, AboutApp } from "./pages";
+import { DefaultLayout } from "@/layout";
+import { dataProvider, authProvider } from "@/providers";
+import {
+  Dashboard,
+  Settings,
+  Profile,
+  AboutApp,
+  UserList,
+  UserShow,
+  UserEdit,
+  UserCreate,
+} from "@/pages";
 
 export const App = () => (
   <Admin
@@ -22,9 +24,10 @@ export const App = () => (
     <Resource
       name="users"
       icon={PeopleIcon}
-      list={ListGuesser}
-      show={ShowGuesser}
-      edit={EditGuesser}
+      list={UserList}
+      show={UserShow}
+      edit={UserEdit}
+      create={UserCreate}
     />
     <CustomRoutes>
       <Route path="/settings" element={<Settings />} />
