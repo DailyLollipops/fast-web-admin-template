@@ -17,6 +17,6 @@ class Template(SQLModel, table=True):
         default_factory=lambda: datetime.now(),
         sa_column_kwargs={'onupdate': lambda: datetime.now()}
     )
-    modified_by_id: int = Field(foreign_key='users.id')
+    modified_by_id: int | None = Field(foreign_key='users.id', nullable=True)
 
     modified_by: 'User' = Relationship(sa_relationship_kwargs={"lazy": "joined"})  # noqa: F821
