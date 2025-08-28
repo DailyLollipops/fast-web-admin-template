@@ -1,6 +1,6 @@
 import { AppBar as RaAppBar, TitlePortal } from "react-admin";
 import { useMediaQuery, useTheme } from "@mui/material";
-import Logo from "../../assets/brand.svg?react";
+import Logo from "@/assets/brand.svg?react";
 import { UserMenu } from "./Appbar/UserMenu";
 import { NotificationMenu } from "./Appbar/NotificationMenu";
 
