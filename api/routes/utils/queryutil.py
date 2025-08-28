@@ -23,6 +23,8 @@ class Operands(str, Enum):
     lte = '<='
     in_ = 'in'
     not_in = 'not_in'
+    like = 'like'
+    ilike = 'ilike'
 
 
 class GetListFilter(BaseModel):
@@ -218,6 +220,10 @@ async def get_list[T: SQLModel](
                 if isinstance(filter.value, list) and filter.value:
                     if column := getattr(model_cls, filter.field, None):
                         q = q.where(~column.in_(filter.value))
+            elif filter.operator == Operands.like:
+                q = q.where(column.like(f'%{filter.value}%'))
+            elif filter.operator == Operands.ilike:
+                q = q.where(column.ilike(f'%{filter.value}%'))
 
     if params.order_field is not None:
         if params.order_field not in model_cls.model_fields:

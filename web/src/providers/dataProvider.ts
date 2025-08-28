@@ -50,6 +50,8 @@ export const dataProvider: DataProvider = withLifecycleCallbacks(
           _lte: "<=",
           _in: "in",
           _nin: "not_in",
+          _ilike: "ilike",
+          _like: "like",
         };
 
         const filters = Object.keys(params.filter).map((key) => {
