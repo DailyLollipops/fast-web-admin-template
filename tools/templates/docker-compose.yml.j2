@@ -93,6 +93,8 @@ services:
       - app_network
     environment:
       <<: *web-env
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
     profiles:
       - dev
 
