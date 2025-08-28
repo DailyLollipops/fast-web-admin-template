@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     DATABASE_URL_ASYNC: str
     REDIS_HOST: str
     REDIS_PORT: int = 6379
-    SECRET_KEY: str
+    SECRET_KEY: str = 'change-me'
     REDIS_NOTIFICATION_CHANNEL: str = 'notifications'
     REDIS_EMAIL_CHANNEL: str = 'emails'
     PROFILE_DIRECTORY: str = 'static/profiles'

@@ -38,7 +38,7 @@ class PasswordChangeRequest(BaseModel):
 
 
 async def can_access(db: AsyncSession, resource: str, action: str, role: str):
-    auth_resources = ['me.*']
+    auth_resources = ['me.*', 'notifications.*']
     q = select(RoleAccessControl).where(RoleAccessControl.role == role)
     q_result = await db.exec(q)
     result = q_result.first()
@@ -219,6 +219,7 @@ async def register_user(
     if not verification_setting:
         raise Exception('User verification setting not found. Perhaps you forgot to run migration?')
 
+    verification_value = verification_setting.value
     hashed_password = bcrypt.hashpw(data.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
     new_user = User(
@@ -232,10 +233,10 @@ async def register_user(
     await db.refresh(new_user)
 
     access_token = create_access_token(data={'sub': data.email}, salt='user-auth')
-
     notification_queue.enqueue(
         notify_role,
         triggered_by=new_user.id,
+        category='registration',
         roles=['admin'],
         title='New user has been created',
         body=f'A new user has been created by an admin with email: {new_user.email}'
@@ -244,12 +245,13 @@ async def register_user(
     notification_queue.enqueue(
         notify_user,
         triggered_by=2,
+        category='registration',
         user_id=new_user.id,
         title='Welcome to the app',
         body=f'Hello {new_user.name}, welcome to the app!'
     )
 
-    if verification_setting.value == VerificationMethod.EMAIL:
+    if verification_value == VerificationMethod.EMAIL:
         verification_token = create_access_token(data={'sub': data.email}, salt='user-verification')
 
         base_url_setting = await get_setting(db, ApplicationSettings.BASE_URL)
