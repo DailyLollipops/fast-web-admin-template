@@ -251,14 +251,25 @@ async def get_list[T: SQLModel](
     return total, result
 
 
-async def update_one(db: AsyncSession, model_cls: type[SQLModel], id: int, data: BaseModel):
+async def update_one(
+    db: AsyncSession,
+    model_cls: type[T],
+    id: int,
+    data: BaseModel,
+    transform: Callable[[SelectOfScalar[T]], SelectOfScalar[T]] | None = None,
+):
     unique_fields = [
         field
         for field, info in model_cls.model_fields.items()
         if info.unique is True and info.primary_key is not True
     ]
 
-    obj = await db.get(model_cls, id)
+    q = select(model_cls).where(model_cls.id == id) # type: ignore
+    if transform is not None:
+        q = transform(q)
+
+    result = await db.exec(q)
+    obj = result.first()
     if not obj:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -290,7 +301,13 @@ async def update_one(db: AsyncSession, model_cls: type[SQLModel], id: int, data:
     return obj
 
 
-async def update_many(db: AsyncSession, model_cls: type[SQLModel], ids: list[int], data_list: list[BaseModel]):
+async def update_many(
+    db: AsyncSession,
+    model_cls: type[T],
+    ids: list[int],
+    data_list: list[BaseModel],
+    transform: Callable[[SelectOfScalar[T]], SelectOfScalar[T]] | None = None,
+):
     unique_fields = [
         field
         for field, info in model_cls.model_fields.items()
@@ -299,7 +316,13 @@ async def update_many(db: AsyncSession, model_cls: type[SQLModel], ids: list[int
 
     updated_objs = []
     for id, data in zip(ids, data_list, strict=False):
-        obj = await db.get(model_cls, id)
+        q = select(model_cls).where(model_cls.id == id) # type: ignore
+        if transform is not None:
+            q = transform(q)
+
+        result = await db.exec(q)
+        obj = result.first()
+
         if not obj:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -334,9 +357,20 @@ async def update_many(db: AsyncSession, model_cls: type[SQLModel], ids: list[int
     return updated_objs
 
 
-async def delete_one[T: SQLModel](db: AsyncSession, model_cls: type[T], id: int):
-    result = await db.get(model_cls, id)
-    if not result:
+async def delete_one[T: SQLModel](
+    db: AsyncSession,
+    model_cls: type[T],
+    id: int,
+    transform: Callable[[SelectOfScalar[T]], SelectOfScalar[T]] | None = None,
+):
+    q = select(model_cls).where(model_cls.id == id) # type: ignore
+    if transform is not None:
+        q = transform(q)
+
+    result = await db.exec(q)
+    obj = result.first()
+
+    if not obj:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f'{model_cls.__name__} not found'
@@ -345,10 +379,21 @@ async def delete_one[T: SQLModel](db: AsyncSession, model_cls: type[T], id: int)
     await db.commit()
 
 
-async def delete_many[T: SQLModel](db: AsyncSession, model_cls: type[T], ids: list[int]):
+async def delete_many[T: SQLModel](
+    db: AsyncSession,
+    model_cls: type[T],
+    ids: list[int],
+    transform: Callable[[SelectOfScalar[T]], SelectOfScalar[T]] | None = None,
+):
     for id in ids:
-        result = await db.get(model_cls, id)
-        if not result:
+        q = select(model_cls).where(model_cls.id == id) # type: ignore
+        if transform is not None:
+            q = transform(q)
+
+        result = await db.exec(q)
+        obj = result.first()
+
+        if not obj:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f'{model_cls.__name__} not found'
