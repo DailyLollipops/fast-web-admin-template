@@ -158,7 +158,7 @@ async def me(
     db: Annotated[AsyncSession, Depends(get_async_db)],
 ):
     permissions = []
-    q = select(RoleAccessControl).where(User.role == current_user.role)
+    q = select(RoleAccessControl).where(RoleAccessControl.role == current_user.role)
     if rbac := (await db.exec(q)).first():
         permissions = rbac.permissions or []
 
