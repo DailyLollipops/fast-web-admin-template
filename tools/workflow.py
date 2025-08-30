@@ -3,6 +3,7 @@
 # dependencies = [
 #     "click",
 #     "jinja2",
+#     "sqlmodel",
 #     "textblob",
 # ]
 # ///
