@@ -375,7 +375,7 @@ async def delete_one[T: SQLModel](
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f'{model_cls.__name__} not found'
         )
-    await db.delete(result)
+    await db.delete(obj)
     await db.commit()
 
 
@@ -398,5 +398,5 @@ async def delete_many[T: SQLModel](
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f'{model_cls.__name__} not found'
             )
-        await db.delete(result)
+        await db.delete(obj)
     await db.commit()
