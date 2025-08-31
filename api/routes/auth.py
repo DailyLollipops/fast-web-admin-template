@@ -1,3 +1,5 @@
+import secrets
+from enum import Enum
 from typing import Annotated
 
 import bcrypt
@@ -20,11 +22,28 @@ from worker.queue import get_email_queue, get_notification_queue
 from worker.tasks.email import send_email
 from worker.tasks.notification import notify_role, notify_user
 
+from .utils.crudutils import ActionResponse, make_crud_schemas
+
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/api/auth/login', auto_error=False)
 pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 ACCESS_TOKEN_EXPIRATION = 3600
+TAGS: list[str | Enum] = ['Authentication']
+
+CreateSchema, UpdateSchema, ResponseSchema, ListResponseSchema = make_crud_schemas(User)
+
+class UserAuthSchema(ResponseSchema):
+    permissions: list[str]
+    api: str | None = None
+
+
+class RegisterForm(BaseModel):
+    name: str
+    email: str
+    password: str
+    confirm_password: str
+
 
 class Token(BaseModel):
     access_token: str
@@ -173,18 +192,6 @@ def create_access_token(data: dict, salt: str | bytes | None = None):
     return token
 
 
-class RegisterForm(BaseModel):
-    name: str
-    email: str
-    password: str
-    confirm_password: str
-
-
-class ActionResponse(BaseModel):
-    success: bool
-    message: str
-
-
 async def get_setting(db: AsyncSession, name: str):
     result = await db.exec(
         select(ApplicationSetting)
@@ -193,7 +200,7 @@ async def get_setting(db: AsyncSession, name: str):
     return result.first()
 
 
-@router.post('/auth/register', tags=['Authentication'])
+@router.post('/auth/register', tags=TAGS)
 async def register_user(
     data: RegisterForm,
     db: Annotated[AsyncSession, Depends(get_async_db)],
@@ -285,7 +292,7 @@ async def register_user(
     return Token(access_token=access_token, token_type='bearer')
 
 
-@router.post('/auth/login', tags=['Authentication'])
+@router.post('/auth/login', tags=TAGS)
 async def login_user(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Annotated[AsyncSession, Depends(get_async_db)],
@@ -300,7 +307,7 @@ async def login_user(
     return Token(access_token=access_token, token_type='bearer')
 
 
-@router.get('/auth/verify_email', response_model=ActionResponse, tags=['Authentication'])
+@router.get('/auth/verify_email', response_model=ActionResponse, tags=TAGS)
 async def verify_email(
     token: str,
     db: Annotated[AsyncSession, Depends(get_async_db)],
@@ -331,7 +338,7 @@ async def verify_email(
     return ActionResponse(success=True, message='Email successfully verified')
 
 
-@router.post('/auth/reset_password', response_model=ActionResponse, tags=['Authentication'])
+@router.post('/auth/reset_password', response_model=ActionResponse, tags=TAGS)
 async def reset_password(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_async_db)],
@@ -349,3 +356,29 @@ async def reset_password(
     db.add(user)
     await db.commit()
     return ActionResponse(success=True, message='Password successfully changed')
+
+@router.get('/auth/me', response_model=UserAuthSchema, tags=TAGS)
+async def me(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_async_db)],
+):
+    permissions = []
+    q = select(RoleAccessControl).where(RoleAccessControl.role == current_user.role)
+    if rbac := (await db.exec(q)).first():
+        permissions = rbac.permissions or []
+
+    return UserAuthSchema(**current_user.model_dump(), permissions=permissions)
+
+
+@router.post('/auth/generate_api_key', tags=TAGS)
+async def generate_api_key(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_async_db)],
+):
+    api_key = secrets.token_urlsafe(32)
+    current_user.api = api_key
+    current_user.verified = True
+    db.add(current_user)
+    await db.commit()
+    await db.refresh(current_user)
+    return current_user

@@ -23,7 +23,7 @@ export const authProvider: AuthProvider = {
     const { access_token } = await loginResponse.json();
     localStorage.setItem(AUTH_KEY, access_token);
 
-    const identityResponse = await fetch(`${API_URL}/me`, {
+    const identityResponse = await fetch(`${API_URL}/auth/me`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${access_token}`,
@@ -37,7 +37,7 @@ export const authProvider: AuthProvider = {
 
     const authDetails = await identityResponse.text();
     localStorage.setItem(AUTH_DETAILS, authDetails);
-    window.location.reload();
+    // window.location.reload();
 
     return Promise.resolve();
   },

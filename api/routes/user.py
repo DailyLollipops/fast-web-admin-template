@@ -6,11 +6,10 @@ from typing import Annotated
 import bcrypt
 from database import get_async_db
 from database.models.notification import Notification
-from database.models.role_access_control import RoleAccessControl
 from database.models.user import User
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import or_
-from sqlmodel import delete, select
+from sqlmodel import delete
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from .auth import get_current_user
@@ -29,10 +28,6 @@ PROFILE_DIR.mkdir(parents=True, exist_ok=True)
 CreateSchema, UpdateSchema, ResponseSchema, ListResponseSchema = make_crud_schemas(User)
 UserCreate = CreateSchema
 UserUpdate = UpdateSchema
-
-
-class UserAuthSchema(ResponseSchema):
-    permissions: list[str]
 
 
 @router.post('/users', response_model=ResponseSchema, tags=TAGS)
@@ -150,16 +145,3 @@ async def delete_user(
         success=True,
         message='User deleted successfully'
     )
-
-
-@router.get('/me', response_model=UserAuthSchema, tags=TAGS)
-async def me(
-    current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_async_db)],
-):
-    permissions = []
-    q = select(RoleAccessControl).where(RoleAccessControl.role == current_user.role)
-    if rbac := (await db.exec(q)).first():
-        permissions = rbac.permissions or []
-
-    return UserAuthSchema(**current_user.model_dump(), permissions=permissions)

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -11,6 +11,7 @@ import {
   ListItemText,
   Typography,
 } from "@mui/material";
+import { useGetIdentity, useDataProvider } from "react-admin";
 import LockResetIcon from "@mui/icons-material/LockReset";
 import EmailIcon from "@mui/icons-material/Email";
 import SecurityIcon from "@mui/icons-material/Security";
@@ -20,18 +21,35 @@ import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import { ResetPasswordDialog } from "./ResetPasswordDialog";
 
 export const AccountSecurity = () => {
+  const dataProvider = useDataProvider();
+  const { identity } = useGetIdentity();
   const [showResetPasswordDialog, setOpenResetDialog] = useState(false);
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [showApiKey, setShowApiKey] = useState(false);
+
+  useEffect(() => {
+    if (identity?.api != null || identity?.api != undefined) {
+      setApiKey(maskKey(identity.api));
+      setShowApiKey(true);
+    }
+  }, [identity?.api]);
+
+  const maskKey = (key: string) =>
+    key.length > 12 ? `${key.slice(0, 3)}*********${key.slice(-3)}` : "******";
 
   const handleNotImplemented = () => {
     alert("This feature is not implemented yet.");
   };
 
-  const handleGenerateApiKey = () => {
-    const newKey =
-      Math.random().toString(36).slice(2) + Date.now().toString(36);
-    setApiKey(newKey);
+  const handleGenerateApiKey = async () => {
+    const { json: data } = await dataProvider.fetchJson(
+      "/auth/generate_api_key",
+      {
+        method: "POST",
+      },
+    );
+    console.log(data);
+    setApiKey(maskKey(data.api));
     setShowApiKey(true);
   };
 
