@@ -91,11 +91,19 @@ export const dataProvider: DataProvider = withLifecycleCallbacks(
 
     getMany: async (resource, params) => {
       const query = {
-        filter: JSON.stringify({ ids: params.ids }),
+        filter: JSON.stringify({
+          field: "id",
+          operator: "in",
+          value: params.ids,
+        }),
       };
       const url = `${API_URL}/${resource}?${stringify(query)}`;
       const { json } = await httpClient(url, { signal: params.signal });
-      return { data: json };
+
+      return {
+        data: json.data,
+        total: json.total,
+      };
     },
 
     getManyReference: async (resource, params) => {
@@ -148,6 +156,7 @@ export const dataProvider: DataProvider = withLifecycleCallbacks(
       return { data: json };
     },
 
+    // TODO: Update code
     updateMany: async (resource, params) => {
       const query = {
         filter: JSON.stringify({ id: params.ids }),
@@ -168,6 +177,7 @@ export const dataProvider: DataProvider = withLifecycleCallbacks(
       return { data: json };
     },
 
+    // TODO: Update code
     deleteMany: async (resource, params) => {
       const query = {
         filter: JSON.stringify({ id: params.ids }),
