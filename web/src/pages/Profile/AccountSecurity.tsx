@@ -29,7 +29,7 @@ export const AccountSecurity = () => {
 
   useEffect(() => {
     if (identity?.api != null || identity?.api != undefined) {
-      setApiKey(maskKey(identity.api));
+      setApiKey(identity.api);
       setShowApiKey(true);
     }
   }, [identity?.api]);
@@ -49,7 +49,7 @@ export const AccountSecurity = () => {
       },
     );
     console.log(data);
-    setApiKey(maskKey(data.api));
+    setApiKey(data.api);
     setShowApiKey(true);
   };
 
@@ -164,7 +164,7 @@ export const AccountSecurity = () => {
               sx={{ bgcolor: "grey.100", borderRadius: 1, mt: 1 }}
             >
               <Typography variant="body2" sx={{ wordBreak: "break-all" }}>
-                {apiKey}
+                {maskKey(apiKey ?? "")}
               </Typography>
               <IconButton onClick={handleCopy} size="small">
                 <ContentCopyIcon fontSize="small" />
