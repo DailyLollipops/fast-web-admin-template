@@ -3,6 +3,7 @@
 # dependencies = [
 #     "aiomysql",
 #     "bcrypt",
+#     "cryptography",
 #     "pydantic-settings",
 #     "pymysql",
 #     "redis",
