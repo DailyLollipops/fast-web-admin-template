@@ -41,19 +41,18 @@ class GetListParams(BaseModel):
     filters: list[GetListFilter] | None = None
     embeds: list[str] = []
 
-    @model_validator(mode='before')
-    def check_order_by(cls, values):
-        order_by = values.get('order_by')
-        if order_by not in {'asc', 'desc'}:
+    @model_validator(mode='after')
+    def check_order_by(self):
+        if self.order_by not in {'asc', 'desc'}:
             raise ValueError('order_by must be `asc` or `desc`')
-        return values
+        return self
 
 
 def get_list_params(
     order_field: str = Query('id', description='Field to order by'),
     order_by: str = Query('asc', description='Order direction: asc or desc'),
-    limit: int = Query(10, ge=1, le=100, description='Limit number of results'),
-    offset: int = Query(0, ge=0, description='Number of items to skip'),
+    limit: int = Query(None, ge=1, le=100, description='Limit number of results'),
+    offset: int = Query(None, ge=0, description='Number of items to skip'),
     filters: str | None = Query(None, description='JSON encoded list of filters'),
     embeds: str | None = Query(None, deprecated='List of relationship models to embed to response')
 ) -> GetListParams:
@@ -149,8 +148,8 @@ async def get_one[T: SQLModel](
         q = transform(q)
 
     result = await db.exec(q)
-    if result := result.first():
-        return result
+    if obj := result.first():
+        return obj
     
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
