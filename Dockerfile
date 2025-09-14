@@ -4,14 +4,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/root/.local/bin:$PATH"
 
-COPY uv.lock pyproject.toml /workspace/
 RUN apt-get update \
     && apt-get install -y curl build-essential \
     && rm -rf /var/lib/apt/lists/* 
 
-WORKDIR /workspace/app
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
     && uv venv /workspace
+
+COPY uv.lock pyproject.toml /workspace/
+WORKDIR /workspace/app
 
 FROM base_python AS api
 
