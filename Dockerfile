@@ -24,14 +24,6 @@ RUN uv sync --group worker
 
 FROM node:22-alpine AS web
 
-ARG APP_ENV
-ARG VITE_APP_NAME
-ARG VITE_BASE_API_URL
-
-ENV APP_ENV=${APP_ENV} \
-    VITE_APP_NAME=${VITE_APP_NAME} \
-    VITE_BASE_API_URL=${VITE_BASE_API_URL}
-
 WORKDIR /workspace/app
 
 COPY ./web/package*.json /workspace/app/
@@ -41,6 +33,7 @@ RUN npm install -D vite
 FROM web AS web_prod
 
 COPY ./web /workspace/app/
+COPY .env /workspace/app/.env
 
 RUN apk add xsel
 RUN npm install -g serve

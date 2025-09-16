@@ -143,8 +143,6 @@ services:
       - pr-api
     networks:
       - app_network
-    environment:
-      <<: *web-env
     profiles:
       - prod
 
