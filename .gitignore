@@ -7,6 +7,7 @@ web/build
 supervisord.pid
 .env
 .ruff_cache
+.pytest_cache
 
 # Logs
 *.log
