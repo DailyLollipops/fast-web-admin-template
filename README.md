@@ -117,6 +117,18 @@ Options:
   --help                    Show this message and exit.
 ```
 
+### Testing
+
+Run test under `testing/tests`
+
+```bash
+docker compose run --rm testing uv run pytest
+```
+
+Testing uses pytest internally and any args would apply as well
+
+_TODO: Add integration tests_
+
 ---
 
 ## Project Structure (Summary)
