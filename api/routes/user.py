@@ -102,12 +102,6 @@ async def update_user(
     data: UserUpdate,
 ):
     try:
-        if data.password: # type: ignore
-            data.password = bcrypt.hashpw( # type: ignore
-                data.password.encode('utf-8'), # type: ignore
-                bcrypt.gensalt()
-            ).decode('utf-8')
-
         if data.profile: # type: ignore
             uuid_str = str(uuid.uuid4())
             file_path = PROFILE_DIR / uuid_str
