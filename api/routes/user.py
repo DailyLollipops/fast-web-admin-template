@@ -123,16 +123,17 @@ async def update_user(
 async def delete_user(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_async_db)],
-    id: str,
+    id: int,
 ):
+    user = await queryutil.get_one(db, User, id)
     query = delete(Notification).where(
         or_(
-            Notification.user_id == current_user.id, # type: ignore
-            Notification.triggered_by == current_user.id # type: ignore
+            Notification.user_id == user.id, # type: ignore
+            Notification.triggered_by == user.id # type: ignore
         )
     )
     await db.exec(query) # type: ignore
-    await db.delete(current_user)
+    await db.delete(user)
     await db.commit()
 
     return ActionResponse(
