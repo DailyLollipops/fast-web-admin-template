@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,6 +9,8 @@ from routes.notification import router as notification_router
 from routes.role_access_control import router as role_access_control_router
 from routes.user import router as user_router
 
+
+BASE_PATH = Path(__file__).parent
 
 app = FastAPI(
     docs_url='/api/docs',
@@ -21,7 +23,7 @@ app.include_router(notification_router, prefix='/api')
 app.include_router(app_setting_router, prefix='/api')
 app.include_router(role_access_control_router, prefix='/api')
 
-static_folder_path = os.path.join(os.getcwd(), 'static')
+static_folder_path = BASE_PATH / 'static'
 app.mount("/api/static", StaticFiles(directory=static_folder_path), name='static')
 
 app.add_middleware(

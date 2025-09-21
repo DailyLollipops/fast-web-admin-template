@@ -1,0 +1,8 @@
+#!/bin/bash
+set -e
+
+mysql -uroot -p"$MYSQL_ROOT_PASSWORD" <<-EOSQL
+  CREATE DATABASE IF NOT EXISTS test_db;
+  GRANT ALL PRIVILEGES ON test_db.* TO '${MYSQL_USER}'@'%';
+  FLUSH PRIVILEGES;
+EOSQL

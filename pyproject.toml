@@ -126,6 +126,8 @@ api = [
 dev = [
     "click>=8.2.1",
     "nltk>=3.9.1",
+    "pytest>=8.4.2",
+    "pytest-asyncio>=1.2.0",
     "ruff>=0.12.8",
 ]
 worker = [
