@@ -130,11 +130,11 @@ def upgrade() -> None:
             },
             {
                 'role': 'admin',
-                'permissions': ["templates.*"]
+                'permissions': ['users.*', 'templates.*', 'notifications.*']
             },
             {
                 'role': 'user',
-                'permissions': []
+                'permissions': ['notifications.*']
             },
         ]
     )
