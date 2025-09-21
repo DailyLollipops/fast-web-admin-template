@@ -5,7 +5,7 @@
 #     "jinja2",
 # ]
 # ///
-
+import os
 import secrets
 from pathlib import Path
 
@@ -43,17 +43,19 @@ def create_compose_file(app_name: str, outfile: str):
 
 def create_caddy_file():
     tpl_path = (TEMPLATES_DIR / 'Caddyfile.j2')
+    config_path = Path(__file__).parent.parent / 'provision' / 'caddy'
+    os.makedirs(config_path, exist_ok=True)
     with open(tpl_path) as f:
         template_content = f.read()
 
     template = Template(template_content)
 
     output = template.render(domain='localhost', prod=False)
-    with open('provision/caddy/Caddyfile.local', 'w') as file:
+    with open(config_path / 'Caddyfile.local', 'w') as file:
         file.write(output)
 
     output = template.render(domain='domain.com', prod=True)
-    with open('provision/caddy/Caddyfile.prod', 'w') as file:
+    with open(config_path / 'Caddyfile.prod', 'w') as file:
         file.write(output)
 
 
