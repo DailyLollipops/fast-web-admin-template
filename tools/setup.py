@@ -49,11 +49,11 @@ def create_caddy_file():
     template = Template(template_content)
 
     output = template.render(domain='localhost', prod=False)
-    with open('provision/Caddyfile.local', 'w') as file:
+    with open('provision/caddy/Caddyfile.local', 'w') as file:
         file.write(output)
 
     output = template.render(domain='domain.com', prod=True)
-    with open('provision/Caddyfile.prod', 'w') as file:
+    with open('provision/caddy/Caddyfile.prod', 'w') as file:
         file.write(output)
 
 

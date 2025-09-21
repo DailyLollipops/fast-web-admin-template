@@ -104,7 +104,7 @@ services:
       - 80:80
       - 443:443
     volumes:
-      - ./provision/Caddyfile.local:/etc/caddy/Caddyfile
+      - ./provision/caddy/Caddyfile.local:/etc/caddy/Caddyfile
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
@@ -152,7 +152,7 @@ services:
       - 80:80
       - 443:443
     volumes:
-      - ./provision/Caddyfile.prod:/etc/caddy/Caddyfile
+      - ./provision/caddy/Caddyfile.prod:/etc/caddy/Caddyfile
       - pr_caddy_data:/data
       - pr_caddy_config:/config
     depends_on:
