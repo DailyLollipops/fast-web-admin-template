@@ -46,18 +46,30 @@ def get_model_from_model_files(model: str):
     return model_cls
 
 
-@click.group()
-def cli():
-    pass
+def create_model_file(model: str):
+    output_path = (MODELS_DIR / f'{model}.py')
+
+    if output_path.exists():
+        raise Exception('Model file already exists')
+
+    table_name = TextBlob(model.lower()).words[0].pluralize() # type: ignore
+
+    template_file = (TEMPLATES_DIR / 'model.py.j2')
+    with open(template_file) as f:
+        template_content = f.read()
+
+    env = Environment()
+    template = env.from_string(template_content)
+    output = template.render(
+        model=model,
+        table_name=table_name,
+    )
+
+    with open(output_path, 'w') as file:
+        file.write(output)
 
 
-@click.command()
-@click.argument('model')
-@click.option('--create-login-required', '-clr', is_flag=True, default=False, help='Require login for CREATE route')
-@click.option('--read-login-required', '-rlr', is_flag=True, default=False, help='Require login for READ route')
-@click.option('--update-login-required', '-ulr', is_flag=True, default=False, help='Require login for UPDATE route')
-@click.option('--delete-login-required', '-dlr', is_flag=True, default=False, help='Require login for DELETE route')
-def generate_model_route(
+def create_route_file(
     model: str,
     create_login_required: bool,
     read_login_required: bool,
@@ -99,9 +111,7 @@ def generate_model_route(
     subprocess.run(cmd, cwd=BASE_PATH, check=True)
 
 
-@click.command()
-@click.argument('model')
-def generate_model_factory(model: str):
+def create_factory_file(model: str):
     template_file = (TEMPLATES_DIR / 'factory.py.j2')
     with open(template_file) as f:
         template_content = f.read()
@@ -120,6 +130,46 @@ def generate_model_factory(model: str):
         file.write(output)
 
 
+@click.group()
+def cli():
+    pass
+
+
+@click.command()
+@click.argument('model')
+def generate_model(model: str):
+    create_model_file(model=model)
+
+
+@click.command()
+@click.argument('model')
+@click.option('--create-login-required', '-clr', is_flag=True, default=False, help='Require login for CREATE route')
+@click.option('--read-login-required', '-rlr', is_flag=True, default=False, help='Require login for READ route')
+@click.option('--update-login-required', '-ulr', is_flag=True, default=False, help='Require login for UPDATE route')
+@click.option('--delete-login-required', '-dlr', is_flag=True, default=False, help='Require login for DELETE route')
+def generate_model_route(
+    model: str,
+    create_login_required: bool,
+    read_login_required: bool,
+    update_login_required: bool,
+    delete_login_required: bool
+):
+    create_route_file(
+        model=model,
+        create_login_required=create_login_required,
+        read_login_required=read_login_required,
+        update_login_required=update_login_required,
+        delete_login_required=delete_login_required
+    )
+
+
+@click.command()
+@click.argument('model')
+def generate_model_factory(model: str):
+    create_factory_file(model=model)
+
+
+cli.add_command(generate_model)
 cli.add_command(generate_model_route)
 cli.add_command(generate_model_factory)
 
