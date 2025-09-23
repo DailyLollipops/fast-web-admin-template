@@ -260,7 +260,7 @@ async def update_one(
     unique_fields = [
         field
         for field, info in model_cls.model_fields.items()
-        if info.unique is True and info.primary_key is not True
+        if getattr(info, 'unique', False) is True and info.primary_key is not True
     ]
 
     q = select(model_cls).where(model_cls.id == id) # type: ignore
