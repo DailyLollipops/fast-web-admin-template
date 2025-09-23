@@ -98,6 +98,32 @@ async def get_notification(
         ) from ex
 
 
+@router.patch('/notifications/see_all', response_model=ActionResponse, tags=['Notification'])
+async def see_all_notifications(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_async_db)],
+):
+    try:
+        statement = (
+            Notification.__table__.update() # type: ignore
+            .where(Notification.user_id == current_user.id)
+            .values(seen=True)
+        )
+        await db.exec(statement)
+        await db.commit()
+        return ActionResponse(
+            success=True,
+            message='All notifications marked as seen'
+        )
+    except HTTPException as ex:
+        raise ex
+    except Exception as ex:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(ex)
+        ) from ex
+
+
 @router.patch('/notifications/{id}', response_model=ResponseSchema, tags=['Notification'])
 async def update_notification(
 	current_user: Annotated[User, Depends(get_current_user)],

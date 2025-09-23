@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useGetList } from "react-admin";
+import { useDataProvider, useGetList } from "react-admin";
 import {
   ListItemIcon,
   ListItemText,
@@ -18,26 +18,31 @@ const categoryIcons: Record<string, JSX.Element> = {
 };
 
 export const NotificationMenu = () => {
+  const dataProvider = useDataProvider();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 
-  const { data: notifications, isLoading: notificationsLoading } = useGetList(
-    "notifications",
-    {
-      sort: { field: "created_at", order: "DESC" },
-    },
-  );
+  const {
+    data: notifications,
+    isLoading: notificationsLoading,
+    refetch,
+  } = useGetList("notifications", {
+    sort: { field: "created_at", order: "DESC" },
+  });
 
   if (notificationsLoading) return null;
 
+  const unreadCount = notifications?.filter((n) => !n.seen).length || 0;
+  const handleMenuClick = async (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+    await dataProvider.fetchJson("/notifications/see_all", { method: "PATCH" });
+    refetch();
+  };
+
   return (
     <>
-      <IconButton
-        color="inherit"
-        onClick={(e) => setAnchorEl(e.currentTarget)}
-        sx={{ ml: "auto" }}
-      >
-        <Badge badgeContent={notifications!.length} color="error">
+      <IconButton color="inherit" onClick={handleMenuClick} sx={{ ml: "auto" }}>
+        <Badge badgeContent={unreadCount} color="error">
           <NotificationsIcon />
         </Badge>
       </IconButton>
