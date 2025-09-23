@@ -57,7 +57,7 @@ class PasswordChangeRequest(BaseModel):
 
 
 async def can_access(db: AsyncSession, resource: str, action: str, role: str):
-    auth_resources = ['auth.*', 'notifications.*']
+    auth_resources = ['auth.*']
     q = select(RoleAccessControl).where(RoleAccessControl.role == role)
     q_result = await db.exec(q)
     result = q_result.first()
