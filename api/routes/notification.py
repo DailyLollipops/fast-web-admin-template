@@ -23,7 +23,7 @@ TAGS: list[str | Enum] = ['Notification']
 CreateSchema, UpdateSchema, ResponseSchema, ListResponseSchema = make_crud_schemas(
     Notification,
     addtl_excluded_create_fields=['triggered_by'],
-    addtl_excluded_update_fields=['triggered_by'],
+    addtl_excluded_update_fields=['user_id','triggered_by'],
 )
 NotificationCreate = CreateSchema
 NotificationUpdate = UpdateSchema
@@ -36,14 +36,13 @@ async def create_notification(
     db: Annotated[AsyncSession, Depends(get_async_db)],
 ):
     try:
-        if not db.get(User, data.user_id): # type: ignore
+        if not await db.get(User, data.user_id): # type: ignore
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail='User not found'
             )
 
-        data.triggered_by = current_user.id # type: ignore
-        obj = Notification(**data.model_dump())
+        obj = Notification(**data.model_dump(), triggered_by=current_user.id)
         result = await queryutil.create_one(db, obj)
         return result
     except HTTPException as ex:
