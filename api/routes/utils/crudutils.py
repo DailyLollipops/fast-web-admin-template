@@ -13,7 +13,11 @@ class ActionResponse(BaseModel):
 
 def make_crud_schemas[T: SQLModel](
     model_cls: type[T],
+    addtl_included_create_fields: list[tuple[str, type]] | None = None,
+    addtl_included_response_fields: list[tuple[str, type]] | None = None,
+    addtl_included_update_fields: list[tuple[str, type]] | None = None,
     addtl_excluded_create_fields: list[str] | None = None,
+    addtl_excluded_response_fields: list[str] | None = None,
     addtl_excluded_update_fields: list[str] | None = None,
 ) -> tuple[type[BaseModel], type[BaseModel], type[BaseModel], type[BaseModel]]:
     """
@@ -21,8 +25,10 @@ def make_crud_schemas[T: SQLModel](
     Returns: (Create, Update, Response, ListResponse)
     """
     excluded_create_fields = ['modified_by_id', 'created_at', 'updated_at'] + (addtl_excluded_create_fields or [])
-    excluded_update_fields = ['password', 'created_at', 'updated_at'] + (addtl_excluded_update_fields or [])
-    excluded_response_fields = ['password', 'api']
+    excluded_response_fields = ['password', 'api'] + (addtl_excluded_response_fields or [])
+    excluded_update_fields = (
+        ['password', 'modified_by_id', 'created_at', 'updated_at'] + (addtl_excluded_update_fields or [])
+    )
 
     def get_create_fields() -> dict:
         fields = {}
@@ -38,6 +44,8 @@ def make_crud_schemas[T: SQLModel](
             elif field.default is not None:
                 default = field.default
             fields[name] = (field.annotation, default)
+        for field_name, field_type in addtl_included_create_fields or []:
+            fields[field_name] = (field_type, ...)
         return fields
 
     def get_update_fields() -> dict:
@@ -49,6 +57,8 @@ def make_crud_schemas[T: SQLModel](
                 if primary_key is True:
                     continue
             fields[name] = (field.annotation, None)
+        for field_name, field_type in addtl_included_update_fields or []:
+            fields[field_name] = (field_type, ...)
         return fields
 
     def get_response_fields() -> dict:
@@ -61,6 +71,8 @@ def make_crud_schemas[T: SQLModel](
             if name.startswith('_'):
                 continue
             fields[name] = (field.annotation, ...)
+        for field_name, field_type in addtl_included_response_fields or []:
+            fields[field_name] = (field_type, ...)
         return fields
 
     create_fields = get_create_fields()
