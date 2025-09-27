@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import Annotated
@@ -112,7 +113,8 @@ async def update_template(
         template = await queryutil.get_one(db, Template, id)
 
         path = Path(template.path)
-        new_path = TEMPLATE_PATH / 'modified' / f'{path.name}.j2'
+        file_name = f'{template.name}_{int(datetime.now().timestamp())}{path.suffix}'
+        new_path = TEMPLATE_PATH / 'modified' / file_name
         with open(new_path, 'w', encoding='utf-8') as f:
             f.write(data.content) # type: ignore
 
