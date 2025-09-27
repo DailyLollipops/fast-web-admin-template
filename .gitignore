@@ -15,3 +15,5 @@ supervisord.pid
 # Static files
 !api/static/.gitkeep
 api/static/*
+api/templates/modified/*
+!api/templates/modified/.gitkeep

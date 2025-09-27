@@ -1,4 +1,6 @@
+import os
 from enum import Enum
+from pathlib import Path
 from typing import Annotated
 
 from database import get_async_db
@@ -15,11 +17,24 @@ from .utils.queryutil import GetListParams, get_list_params
 
 router = APIRouter()
 TAGS: list[str | Enum] = ['Template']
+TEMPLATE_PATH = Path(__file__).parent.parent / 'templates'
 
 
-CreateSchema, UpdateSchema, ResponseSchema, ListResponseSchema = make_crud_schemas(Template)
+CreateSchema, UpdateSchema, ResponseSchema, ListResponseSchema = make_crud_schemas(
+    Template,
+    addtl_included_create_fields=[('content', str)],
+    addtl_included_response_fields=[('content', str)],
+    addtl_included_update_fields=[('content', str)],
+    addtl_excluded_create_fields=['path'],
+    addtl_excluded_response_fields=['path'],
+    addtl_excluded_update_fields=['name', 'template_type', 'path'],
+)
 TemplateCreate = CreateSchema
 TemplateUpdate = UpdateSchema
+
+
+def get_template_content(template: Template) -> str:
+    return Path(template.path).read_text() if template.path else ''
 
 
 @router.post('/templates', response_model=ResponseSchema, tags=TAGS)
@@ -29,9 +44,17 @@ async def create_template(
     data: TemplateCreate,
 ):
     try:
+        tpl_path = TEMPLATE_PATH / f'{data.template_type}s' # type: ignore
+        os.makedirs(tpl_path, exist_ok=True)
+        file_path = tpl_path / f'{data.name}.j2' # type: ignore
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write(data.content) # type: ignore
+        
         obj = Template(**data.model_dump())
+        obj.path = str(file_path)
+        obj.modified_by_id = current_user.id
         result = await queryutil.create_one(db, obj)
-        return result
+        return ResponseSchema(**result.model_dump(), content=get_template_content(result))
     except HTTPException as ex:
         raise ex
     except Exception as ex:
@@ -39,6 +62,7 @@ async def create_template(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(ex)
         ) from ex
+
 
 @router.get('/templates', response_model=ListResponseSchema, tags=TAGS)
 async def get_templates(
@@ -48,7 +72,7 @@ async def get_templates(
 ):
     try:
         total, results = await queryutil.get_list(db, Template, params)
-        data = [ResponseSchema(**r.model_dump()) for r in results]
+        data = [ResponseSchema(**r.model_dump(), content=get_template_content(r)) for r in results]
         return ListResponseSchema(total=total, data=data)
     except HTTPException as ex:
         raise ex
@@ -58,6 +82,7 @@ async def get_templates(
             detail=str(ex)
         ) from ex
 
+
 @router.get('/templates/{id}', response_model=ResponseSchema, tags=TAGS)
 async def get_template(
 	current_user: Annotated[User, Depends(get_current_user)],
@@ -66,7 +91,7 @@ async def get_template(
 ):
     try:
         result = await queryutil.get_one(db, Template, id)
-        return result
+        return ResponseSchema(**result.model_dump(), content=get_template_content(result))
     except HTTPException as ex:
         raise ex
     except Exception as ex:
@@ -74,6 +99,7 @@ async def get_template(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(ex)
         ) from ex
+
 
 @router.patch('/templates/{id}', response_model=ResponseSchema, tags=TAGS)
 async def update_template(
@@ -83,8 +109,19 @@ async def update_template(
     data: TemplateUpdate,
 ):
     try:
-        result = await queryutil.update_one(db, Template, id, data)
-        return result
+        template = await queryutil.get_one(db, Template, id)
+
+        path = Path(template.path)
+        new_path = TEMPLATE_PATH / 'modified' / f'{path.name}.j2'
+        with open(new_path, 'w', encoding='utf-8') as f:
+            f.write(data.content) # type: ignore
+
+        template.path = str(new_path)
+        template.modified_by_id = current_user.id
+        db.add(template)
+        await db.commit()
+        await db.refresh(template)
+        return ResponseSchema(**template.model_dump(), content=get_template_content(template))
     except HTTPException as ex:
         raise ex
     except Exception as ex:
@@ -92,6 +129,7 @@ async def update_template(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(ex)
         ) from ex
+
 
 @router.delete('/templates/{id}', response_model=ActionResponse, tags=TAGS)
 async def delete_template(
