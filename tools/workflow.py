@@ -48,7 +48,6 @@ def get_model_from_model_files(model: str):
 
 def create_model_file(model: str):
     output_path = (MODELS_DIR / f'{model}.py')
-
     if output_path.exists():
         raise Exception('Model file already exists')
 
@@ -76,9 +75,9 @@ def create_route_file(
     update_login_required: bool,
     delete_login_required: bool
 ):
-    built_ins = ['user', 'notification', 'application_setting', 'role_access_control']
-    if model in built_ins:
-        raise Exception('Cannot generate routes for built in models')
+    output_path = (ROUTES_DIR / f'{model}.py')
+    if output_path.exists():
+        raise Exception('Route file already exists')
 
     route_name = TextBlob(model.lower()).words[0].pluralize() # type: ignore
     model_cls = get_model_from_model_files(model)
@@ -99,7 +98,6 @@ def create_route_file(
         delete_login_required=delete_login_required
     )
 
-    output_path = (ROUTES_DIR / f'{model}.py')
     with open(output_path, 'w') as file:
         file.write(output)
 
@@ -112,6 +110,10 @@ def create_route_file(
 
 
 def create_factory_file(model: str):
+    output_path = (FACTORY_DIR / f'{model}.py')
+    if output_path.exists():
+        raise Exception('Route file already exists')
+
     template_file = (TEMPLATES_DIR / 'factory.py.j2')
     with open(template_file) as f:
         template_content = f.read()
@@ -125,7 +127,6 @@ def create_factory_file(model: str):
         module=model.lower()
     )
 
-    output_path = (FACTORY_DIR / f'{model}.py')
     with open(output_path, "w") as file:
         file.write(output)
 
