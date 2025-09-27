@@ -3,6 +3,7 @@ import { Title } from "react-admin";
 import { Box, Card, CardContent, Tabs, Tab, Typography } from "@mui/material";
 import { ApplicationSettingsForm } from "./Settings/ApplicationSettingsForm";
 import { RoleAccessSettingsForm } from "./Settings/RoleAccessSettingsForm";
+import { TemplateSettingsForm } from "./Settings/TemplateSettingsForm";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -64,6 +65,11 @@ export const Settings = () => {
             id="settings-tab-1"
             aria-controls="settings-tabpanel-1"
           />
+          <Tab
+            label="Templates"
+            id="settings-tab-2"
+            aria-controls="settings-tabpanel-2"
+          />
         </Tabs>
 
         <TabPanel value={tab} index={0}>
@@ -72,6 +78,10 @@ export const Settings = () => {
 
         <TabPanel value={tab} index={1}>
           <RoleAccessSettingsForm />
+        </TabPanel>
+
+        <TabPanel value={tab} index={2}>
+          <TemplateSettingsForm />
         </TabPanel>
       </CardContent>
     </Card>
