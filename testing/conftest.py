@@ -79,7 +79,7 @@ def session_setup_and_teardown():
 
     # Remove generated files
     if TEMPLATES_DIR.exists():
-        os.removedirs(TEMPLATES_DIR)
+        shutil.rmtree(TEMPLATES_DIR)
 
     # Artifacts
     os.makedirs(ARTIFACTS_DIR, exist_ok=True)
