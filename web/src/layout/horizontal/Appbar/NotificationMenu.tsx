@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useDataProvider, useGetList } from "react-admin";
+import { useAuthState, useDataProvider, useGetList } from "react-admin";
 import {
   ListItemIcon,
   ListItemText,
@@ -18,6 +18,13 @@ const categoryIcons: Record<string, JSX.Element> = {
 };
 
 export const NotificationMenu = () => {
+  const { isPending, authenticated } = useAuthState();
+  if (isPending || !authenticated) return null;
+
+  return <NotificationMenuContent />;
+};
+
+export const NotificationMenuContent = () => {
   const dataProvider = useDataProvider();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
