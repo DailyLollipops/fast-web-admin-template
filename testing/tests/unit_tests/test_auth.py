@@ -1,6 +1,7 @@
 import httpx
 import pytest
-from test_constants import API_URL
+
+from testing.fixtures import API_URL
 
 
 USERS = [
