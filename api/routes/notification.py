@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel.sql.expression import SelectOfScalar
 
-from .auth import get_current_user
+from .auth import get_authenticated_user
 from .utils import queryutil
 from .utils.crudutils import ActionResponse, make_crud_schemas
 from .utils.queryutil import GetListParams, get_list_params
@@ -32,7 +32,7 @@ NotificationUpdate = UpdateSchema
 @router.post('/notifications', response_model=ResponseSchema, tags=TAGS)
 async def create_notification(
     data: NotificationCreate,
-	current_user: Annotated[User, Depends(get_current_user)],
+	current_user: Annotated[User, get_authenticated_user('notifications', 'create')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
 ):
     try:
@@ -56,7 +56,7 @@ async def create_notification(
 
 @router.get('/notifications', response_model=ListResponseSchema, tags=['Notification'])
 async def get_notifications(
-	current_user: Annotated[User, Depends(get_current_user)],
+	current_user: Annotated[User, get_authenticated_user('notifications', 'read')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
     params: Annotated[GetListParams, Depends(get_list_params)],
 ):
@@ -78,7 +78,7 @@ async def get_notifications(
 
 @router.get('/notifications/{id}', response_model=ResponseSchema, tags=['Notification'])
 async def get_notification(
-	current_user: Annotated[User, Depends(get_current_user)],
+	current_user: Annotated[User, get_authenticated_user('notifications', 'read')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
     id: int,
 ):
@@ -99,7 +99,7 @@ async def get_notification(
 
 @router.patch('/notifications/see_all', response_model=ActionResponse, tags=['Notification'])
 async def see_all_notifications(
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, get_authenticated_user('notifications', 'see_all')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
 ):
     try:
@@ -125,7 +125,7 @@ async def see_all_notifications(
 
 @router.patch('/notifications/{id}', response_model=ResponseSchema, tags=['Notification'])
 async def update_notification(
-	current_user: Annotated[User, Depends(get_current_user)],
+	current_user: Annotated[User, get_authenticated_user('notifications', 'update')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
     id: int,
     data: NotificationUpdate,
@@ -144,7 +144,7 @@ async def update_notification(
 
 @router.delete('/notifications/{id}', response_model=ActionResponse, tags=['Notification'])
 async def delete_notification(
-	current_user: Annotated[User, Depends(get_current_user)],
+	current_user: Annotated[User, get_authenticated_user('notifications', 'delete')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
     id: int,
 ):

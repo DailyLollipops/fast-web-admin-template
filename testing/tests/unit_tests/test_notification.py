@@ -22,10 +22,10 @@ def get_crud_params():
             'delete': 200,
         },
         'user': {
-            'create': 401,
+            'create': 403,
             'read': 200,
-            'update': 401,
-            'delete': 401,
+            'update': 403,
+            'delete': 403,
         },
     }
     

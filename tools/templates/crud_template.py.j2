@@ -9,7 +9,7 @@ from database.models.user import User
 from database.models.{{ module }} import {{ model.__name__ }}
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from .auth import get_current_user
+from .auth import get_authenticated_user
 from .utils import queryutil
 from .utils.crudutils import ActionResponse, make_crud_schemas
 from .utils.queryutil import GetListParams, get_list_params
@@ -24,11 +24,11 @@ CreateSchema, UpdateSchema, ResponseSchema, ListResponseSchema = make_crud_schem
 {{ model.__name__ }}Update = UpdateSchema
 
 
-@router.post('/{{  route_name }}', response_model=ResponseSchema, tags=TAGS)
+@router.post('/{{ route_name }}', response_model=ResponseSchema, tags=TAGS)
 async def create_{{ model.__name__.lower() }}(
-    data: {{ model.__name__ }}Create,
-    {%- if create_login_required %}{{ '\n\t' }}current_user: Annotated[User, Depends(get_current_user)], {%- endif %}
+    {%- if create_login_required %}{{ '\n\t' }}current_user: Annotated[User, get_authenticated_user('{{ route_name }}', 'create')], {%- endif %}
     db: Annotated[AsyncSession, Depends(get_async_db)],
+    data: {{ model.__name__ }}Create,
 ):
     try:
         obj = {{ model.__name__ }}(**data.model_dump())
@@ -45,7 +45,7 @@ async def create_{{ model.__name__.lower() }}(
 
 @router.get('/{{ route_name }}', response_model=ListResponseSchema, tags=['{{ model.__name__ }}'])
 async def get_{{ model.__name__.lower() }}s(
-    {%- if read_login_required %}{{ '\n\t' }}current_user: Annotated[User, Depends(get_current_user)], {%- endif %}
+    {%- if create_login_required %}{{ '\n\t' }}current_user: Annotated[User, get_authenticated_user('{{ route_name }}', 'read')], {%- endif %}
     db: Annotated[AsyncSession, Depends(get_async_db)],
     params: Annotated[GetListParams, Depends(get_list_params)],
 ):
@@ -64,7 +64,7 @@ async def get_{{ model.__name__.lower() }}s(
 
 @router.get('/{{  route_name }}/{id}', response_model=ResponseSchema, tags=['{{ model.__name__ }}'])
 async def get_{{ model.__name__.lower() }}(
-    {%- if read_login_required %}{{ '\n\t' }}current_user: Annotated[User, Depends(get_current_user)], {%- endif %}
+    {%- if create_login_required %}{{ '\n\t' }}current_user: Annotated[User, get_authenticated_user('{{ route_name }}', 'read')], {%- endif %}
     db: Annotated[AsyncSession, Depends(get_async_db)],
     id: int,
 ):
@@ -82,7 +82,7 @@ async def get_{{ model.__name__.lower() }}(
 
 @router.patch('/{{  route_name }}/{id}', response_model=ResponseSchema, tags=['{{ model.__name__ }}'])
 async def update_{{ model.__name__.lower() }}(
-    {%- if update_login_required %}{{ '\n\t' }}current_user: Annotated[User, Depends(get_current_user)], {%- endif %}
+    {%- if create_login_required %}{{ '\n\t' }}current_user: Annotated[User, get_authenticated_user('{{ route_name }}', 'update')], {%- endif %}
     db: Annotated[AsyncSession, Depends(get_async_db)],
     id: int,
     data: {{ model.__name__ }}Update,
@@ -101,7 +101,7 @@ async def update_{{ model.__name__.lower() }}(
 
 @router.delete('/{{  route_name }}/{id}', response_model=ActionResponse, tags=['{{ model.__name__ }}'])
 async def delete_{{ model.__name__.lower() }}(
-    {%- if delete_login_required %}{{ '\n\t' }}current_user: Annotated[User, Depends(get_current_user)], {%- endif %}
+    {%- if create_login_required %}{{ '\n\t' }}current_user: Annotated[User, get_authenticated_user('{{ route_name }}', 'delete')], {%- endif %}
     db: Annotated[AsyncSession, Depends(get_async_db)],
     id: int,
 ):

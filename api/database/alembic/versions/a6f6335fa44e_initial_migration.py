@@ -134,7 +134,7 @@ def upgrade() -> None:
             },
             {
                 'role': 'user',
-                'permissions': ['notifications.read']
+                'permissions': ['notifications.read', 'notifications.see_all']
             },
         ]
     )

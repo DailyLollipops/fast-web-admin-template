@@ -121,22 +121,6 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail='User not verified'
         )
-    
-    action_map = {
-        'POST': 'create',
-        'GET': 'read',
-        'PATCH': 'update',
-        'PUT': 'update',
-        'DELETE': 'delete',
-    }
-
-    resource = request.url.path.split('/')[2]
-    action = action_map.get(request.method, '')
-    if not await can_access(db, resource, action, user.role):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='No access to resource'
-        )
 
     return user
 
@@ -193,6 +177,21 @@ async def authenticate_user(username: str, password: str, db: AsyncSession):
     if not pwd_context.verify(password, user.password):
         return None
     return user
+
+
+def get_authenticated_user(resource: str, action: str):
+    async def dependency(
+        db: Annotated[AsyncSession, Depends(get_async_db)],
+        current_user: Annotated[User, Depends(get_current_user)],
+    ) -> User:
+        if not await can_access(db, resource, action, current_user.role):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"No access to {resource}.{action}",
+            )
+        return current_user
+
+    return Depends(dependency)
 
 
 def create_access_token(data: dict, salt: str | bytes | None = None):
@@ -416,7 +415,7 @@ async def verify_email(
 
 @router.post('/auth/update_password', response_model=ActionResponse, tags=TAGS)
 async def update_password(
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, get_authenticated_user('auth', 'update_password')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
     data: UpdatePasswordForm,
 ):
@@ -436,7 +435,7 @@ async def update_password(
 
 @router.get('/auth/me', response_model=UserAuthSchema, tags=TAGS)
 async def me(
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, get_authenticated_user('auth', 'me')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
 ):
     permissions = []
@@ -449,7 +448,7 @@ async def me(
 
 @router.post('/auth/generate_api_key', tags=TAGS)
 async def generate_api_key(
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, get_authenticated_user('auth', 'generate_api_key')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
 ):
     api_key = secrets.token_urlsafe(32)
