@@ -66,7 +66,7 @@ export const ApplicationSettingsForm = () => {
           .map(([name, value]) =>
             dataProvider.update("application_settings", {
               id: applicationSettings!.find((s) => s.name === name)!.id,
-              data: { value },
+              data: { name, value },
               previousData: applicationSettings!.find((s) => s.name === name)!,
             }),
           );
