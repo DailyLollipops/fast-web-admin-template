@@ -84,7 +84,7 @@ def get_list_params(
     )
 
 
-async def create_one(db: AsyncSession, data: SQLModel):
+async def create_one[T: SQLModel](db: AsyncSession, data: T): # type: ignore
     model_cls = type(data)
     unique_fields = [
         field
