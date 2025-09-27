@@ -196,6 +196,7 @@ export const TemplateSettingsForm = () => {
             </Box>
             {selected ? (
               <Controller
+                key={selected?.id}
                 name={`templates.${selected.id}.content`}
                 defaultValue={selected.content}
                 render={({ field }) => (
@@ -250,6 +251,7 @@ export const TemplateSettingsForm = () => {
             >
               {selected ? (
                 <Controller
+                  key={selected?.id}
                   name={`templates.${selected.id}.content`}
                   defaultValue={selected.content}
                   render={({ field }) => (
