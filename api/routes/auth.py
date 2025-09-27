@@ -50,7 +50,7 @@ class Token(BaseModel):
     token_type: str
 
 
-class PasswordChangeRequest(BaseModel):
+class UpdatePasswordForm(BaseModel):
     current_password: str
     new_password: str
     confirm_password: str
@@ -338,11 +338,11 @@ async def verify_email(
     return ActionResponse(success=True, message='Email successfully verified')
 
 
-@router.post('/auth/reset_password', response_model=ActionResponse, tags=TAGS)
-async def reset_password(
+@router.post('/auth/update_password', response_model=ActionResponse, tags=TAGS)
+async def update_password(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_async_db)],
-    data: PasswordChangeRequest,
+    data: UpdatePasswordForm,
 ):
     user = await authenticate_user(current_user.email, data.current_password, db)
 

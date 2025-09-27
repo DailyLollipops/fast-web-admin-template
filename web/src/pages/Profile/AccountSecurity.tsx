@@ -18,12 +18,13 @@ import SecurityIcon from "@mui/icons-material/Security";
 import LogoutIcon from "@mui/icons-material/Logout";
 import VpnKeyIcon from "@mui/icons-material/VpnKey";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-import { ResetPasswordDialog } from "./ResetPasswordDialog";
+import { UpdatePasswordDialog } from "./UpdatePasswordDialog";
 
 export const AccountSecurity = () => {
   const dataProvider = useDataProvider();
   const { identity } = useGetIdentity();
-  const [showResetPasswordDialog, setOpenResetDialog] = useState(false);
+  const [showUpdatePasswordDialog, setOpenUpdatePasswordDialog] =
+    useState(false);
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [showApiKey, setShowApiKey] = useState(false);
 
@@ -62,9 +63,9 @@ export const AccountSecurity = () => {
 
   return (
     <>
-      <ResetPasswordDialog
-        open={showResetPasswordDialog}
-        onClose={() => setOpenResetDialog(false)}
+      <UpdatePasswordDialog
+        open={showUpdatePasswordDialog}
+        onClose={() => setOpenUpdatePasswordDialog(false)}
       />
 
       <Card
@@ -80,9 +81,9 @@ export const AccountSecurity = () => {
               <Button
                 variant="outlined"
                 size="small"
-                onClick={() => setOpenResetDialog(true)}
+                onClick={() => setOpenUpdatePasswordDialog(true)}
               >
-                Reset
+                Update
               </Button>
             }
           >
@@ -90,8 +91,8 @@ export const AccountSecurity = () => {
               <LockResetIcon />
             </ListItemIcon>
             <ListItemText
-              primary="Reset Password"
-              secondary="Reset your account password."
+              primary="Update Password"
+              secondary="Update your account password."
             />
           </ListItem>
 

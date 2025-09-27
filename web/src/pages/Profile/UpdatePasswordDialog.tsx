@@ -14,15 +14,15 @@ import {
 } from "@mui/material";
 import { FieldValues } from "react-hook-form";
 
-interface ResetPasswordDialogProps {
+interface UpdatePasswordDialogProps {
   open: boolean;
   onClose: () => void;
 }
 
-export const ResetPasswordDialog = ({
+export const UpdatePasswordDialog = ({
   open,
   onClose,
-}: ResetPasswordDialogProps) => {
+}: UpdatePasswordDialogProps) => {
   const notify = useNotify();
   const dataProvider = useDataProvider();
 
@@ -33,7 +33,7 @@ export const ResetPasswordDialog = ({
     }
 
     try {
-      await dataProvider.fetchJson("/auth/reset_password", {
+      await dataProvider.fetchJson("/auth/update_password", {
         method: "POST",
         body: JSON.stringify({
           current_password: data.current_password,
@@ -42,17 +42,17 @@ export const ResetPasswordDialog = ({
         }),
         headers: { "Content-Type": "application/json" },
       });
-      notify("Password reset successfully!", { type: "success" });
+      notify("Password updated successfully!", { type: "success" });
       onClose();
     } catch (error) {
-      console.error("Error resetting password:", error);
-      notify("Failed to reset password. Please try again.", { type: "error" });
+      console.error("Error updating password:", error);
+      notify("Failed to update password. Please try again.", { type: "error" });
     }
   };
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Reset Password</DialogTitle>
+      <DialogTitle>Update Password</DialogTitle>
       <Form onSubmit={handleSubmit}>
         <DialogContent>
           <TextInput
@@ -80,7 +80,7 @@ export const ResetPasswordDialog = ({
         <DialogActions>
           <Button onClick={onClose}>Cancel</Button>
           <Button type="submit" variant="contained">
-            Reset Password
+            Update Password
           </Button>
         </DialogActions>
       </Form>
