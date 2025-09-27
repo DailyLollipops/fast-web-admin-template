@@ -146,6 +146,11 @@ def upgrade() -> None:
                 'template_type': 'email',
                 'path': 'templates/emails/email_verification.html.j2',
             },
+            {
+                'name': 'reset_password',
+                'template_type': 'email',
+                'path': 'templates/emails/reset_password.html.j2',
+            },
         ]
     )
 
