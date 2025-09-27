@@ -45,6 +45,15 @@ class RegisterForm(BaseModel):
     confirm_password: str
 
 
+class ResetPasswordRequestForm(BaseModel):
+    email: str
+
+
+class ResetPasswordForm(BaseModel):
+    new_password: str
+    confirm_password: str
+
+
 class Token(BaseModel):
     access_token: str
     token_type: str
@@ -197,7 +206,21 @@ async def get_setting(db: AsyncSession, name: str):
         select(ApplicationSetting)
         .where(ApplicationSetting.name == name)
     )
-    return result.first()
+    setting = result.first()
+    if not setting:
+        raise Exception('User verification setting not found. Perhaps you forgot to run migration?')
+    return setting.value
+
+
+async def get_template(db: AsyncSession, name: str):
+    result = await db.exec(
+        select(Template)
+        .where(Template.name == name)
+    )
+    template = result.first()
+    if not template:
+        raise Exception('Email template path setting not found. Perhaps you forgot to run migration?')
+    return template.path
 
 
 @router.post('/auth/register', tags=TAGS)
@@ -221,19 +244,14 @@ async def register_user(
             detail='Email/Username already registered'
         )
 
-    verification_setting = await get_setting(db, ApplicationSettings.USER_VERIFICATION)
-
-    if not verification_setting:
-        raise Exception('User verification setting not found. Perhaps you forgot to run migration?')
-
-    verification_value = verification_setting.value
+    verification_method = await get_setting(db, ApplicationSettings.USER_VERIFICATION)
     hashed_password = bcrypt.hashpw(data.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
     new_user = User(
         name=data.name,
         email=data.email,
         password=hashed_password,
-        verified=True if verification_setting.value == VerificationMethod.NONE else False
+        verified=True if verification_method == VerificationMethod.NONE else False
     )
     db.add(new_user)
     await db.commit()
@@ -258,23 +276,10 @@ async def register_user(
         body=f'Hello {new_user.name}, welcome to the app!'
     )
 
-    if verification_value == VerificationMethod.EMAIL:
+    if verification_method == VerificationMethod.EMAIL:
         verification_token = create_access_token(data={'sub': data.email}, salt='user-verification')
-
-        base_url_setting = await get_setting(db, ApplicationSettings.BASE_URL)
-        if not base_url_setting:
-            raise Exception('Email base url setting not found. Perhaps you forgot to run migration?')
-        
-        template_result = await db.exec(
-            select(Template)
-            .where(ApplicationSetting.name == 'email_verification')
-        )
-        email_template_setting = template_result.first()
-        if not email_template_setting:
-            raise Exception('Email template path setting not found. Perhaps you forgot to run migration?')
-        
-        base_url = base_url_setting.value
-        email_verification_template_path = email_template_setting.path
+        base_url = await get_setting(db, ApplicationSettings.BASE_URL)
+        template_path = await get_template(db, 'email_verification')
         verification_url = f'{base_url}/api/auth/verify_email?token={verification_token}'
         new_data = {
             'name': new_user.name,
@@ -283,7 +288,7 @@ async def register_user(
 
         email_queue.enqueue(
             send_email,
-            template=email_verification_template_path,
+            template=template_path,
             data=new_data,
             subject='Verify your email address',
             recipients=[new_user.email]
@@ -305,6 +310,77 @@ async def login_user(
 
     access_token = create_access_token(data={'sub': user.email}, salt='user-auth')
     return Token(access_token=access_token, token_type='bearer')
+
+
+@router.post('/auth/forgot_password', response_model=ActionResponse, tags=TAGS)
+async def forgot_password(
+    data: ResetPasswordRequestForm,
+    db: Annotated[AsyncSession, Depends(get_async_db)],
+    email_queue: Annotated[Queue, Depends(get_email_queue)]
+):
+    response = ActionResponse(
+        success=True,
+        message='Password reset link has been sent to your email',
+    )
+    result = await db.exec(select(User).where(User.email == data.email))
+    user = result.first()
+    if not user:
+        return response
+    
+    reset_token = create_access_token(data={'sub': data.email}, salt='forgot-password')
+    base_url = await get_setting(db, ApplicationSettings.BASE_URL)
+    template_path = await get_template(db, 'reset_password')
+    reset_url = f'{base_url}/reset-password?token={reset_token}'
+    new_data = {
+        'name': user.name,
+        'reset_password_url': reset_url
+    }
+
+    email_queue.enqueue(
+        send_email,
+        template=template_path,
+        data=new_data,
+        subject='Reset your password',
+        recipients=[user.email]
+    )
+
+    return response
+
+
+@router.post('/auth/reset_password', response_model=ActionResponse, tags=TAGS)
+async def reset_password(
+    token: str,
+    data: ResetPasswordForm,
+    db: Annotated[AsyncSession, Depends(get_async_db)],
+):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail='Could not validate credentials',
+        headers={'WWW-Authenticate': 'Bearer'},
+    )
+
+    if data.new_password != data.confirm_password:
+        raise HTTPException(status_code=400, detail='New passwords do not match')
+
+    try:
+        serializer = URLSafeTimedSerializer(settings.SECRET_KEY)
+        payload = serializer.loads(token, max_age=ACCESS_TOKEN_EXPIRATION, salt='forgot-password')
+        username: str = payload.get('sub')
+        if username is None:
+            raise credentials_exception
+    except Exception as ex:
+        raise credentials_exception from ex
+    
+    result = await db.exec(select(User).where(User.email == username))
+    user = result.first()
+    if user is None:
+        raise credentials_exception
+    
+    hashed_password = bcrypt.hashpw(data.new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    user.password = hashed_password
+    db.add(user)
+    await db.commit()
+    return ActionResponse(success=True, message='Password successfully changed')
 
 
 @router.get('/auth/verify_email', response_model=ActionResponse, tags=TAGS)
@@ -356,6 +432,7 @@ async def update_password(
     db.add(user)
     await db.commit()
     return ActionResponse(success=True, message='Password successfully changed')
+
 
 @router.get('/auth/me', response_model=UserAuthSchema, tags=TAGS)
 async def me(
