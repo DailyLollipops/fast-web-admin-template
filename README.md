@@ -125,6 +125,22 @@ Run test under `testing/tests`
 docker compose run --rm testing uv run pytest
 ```
 
+Run specific test file
+
+```bash
+docker compose run --rm testing uv run pytest path/to/test_file.py
+
+# Sample: docker compose run --rm testing uv run pytest tests/unit_tests/test_user.py
+```
+
+Run specific test case
+
+```bash
+docker compose run --rm testing uv run pytest path/to/test_file.py::test_case
+
+# Sample: docker compose run --rm testing uv run pytest tests/unit_tests/test_auth.py::test_login_wrong_password
+```
+
 Testing uses pytest internally and any args would apply as well
 
 _TODO: Add integration tests_
