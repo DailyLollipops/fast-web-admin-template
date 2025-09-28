@@ -147,12 +147,52 @@ _TODO: Add integration tests_
 
 ---
 
+## 📈 Jaeger Tracing
+
+This template supports distributed tracing using **Jaeger** for monitoring and debugging requests across services.
+
+Jaeger is included as a service in the Docker Compose configuration and is accessible via:
+
+```bash
+# For dev environment
+https://localhost/jaeger/
+
+# For prod environment
+https://<domain>/jaeger/
+```
+
+### Configuring Jaeger
+
+During the bootstrap project process, the system would prompt for the jaeger authentication credentials. This process generates the required password hash for the basic_auth directive for `caddy`.
+
+```bash
+λ uv run tools\setup.py bootstrap sample
+Jaeger username: admin
+Jaeger password:
+Repeat for confirmation:
+```
+
+If later on, you wish to update the jaeger authentication details, you can do so by editing `.env` and changing the variables:
+
+- JAEGER_USER
+- JAEGER_PASSWORD
+- JAEGER_PASSWORD_HASH
+
+But you have to manually generate the password hash via bcrypt.
+
+A convenient tool is added to automatically generate the password hash and update the .env file via:
+
+```bash
+uv run tools\setup.py update-jaeger-credentials
+```
+
 ## Project Structure (Summary)
 
 ```
 .
 ├── api/                  # FastAPI backend code
 ├── provision/            # Provision files
+├── testing/              # Testing files
 ├── tools/                # Management and setup scripts
 ├── web/                  # React Admin frontend
 ├── .env                  # Generated environment config

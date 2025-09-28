@@ -2,6 +2,10 @@
     @jaegerNoSlash path /jaeger
     redir @jaegerNoSlash /jaeger/ permanent
 
+    basic_auth /jaeger/* {
+        {$JAEGER_USER} {$JAEGER_PASSWORD_HASH}
+    }
+
     reverse_proxy /api/* {% if prod %}pr-{%- endif %}api:8000
     reverse_proxy /jaeger/* jaeger:16686
     reverse_proxy /* {% if prod %}pr-{%- endif %}web:5173

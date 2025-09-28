@@ -26,6 +26,10 @@ x-custom:
     OTEL_SERVICE_NAME: ${APP_NAME:-sample}
     OTEL_EXPORTER_JAEGER_ENDPOINT: http://jaeger:14268/api/traces
     OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+  caddy-env: &caddy-env
+    JAEGER_USER: ${JAEGER_USER:-admin}
+    JAEGER_PASSWORD: ${JAEGER_PASSWORD:-password}
+    JAEGER_PASSWORD_HASH: ${JAEGER_PASSWORD_HASH}
   mysql-testing-env: &mysql-testing-env
     MYSQL_HOST: ${MYSQL_HOST:-mysql}
     MYSQL_PORT: ${MYSQL_PORT:-3306}
@@ -142,6 +146,8 @@ services:
     depends_on:
       - web
       - api
+    environment:
+      <<: *caddy-env
     networks:
       - app_network
     profiles:
@@ -191,6 +197,8 @@ services:
     depends_on:
       - pr-web
       - pr-api
+    environment:
+      <<: *caddy-env
     networks:
       - app_network
     profiles:
