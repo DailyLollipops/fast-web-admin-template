@@ -1,5 +1,9 @@
 {{ domain }} {
+    @jaegerNoSlash path /jaeger
+    redir @jaegerNoSlash /jaeger/ permanent
+
     reverse_proxy /api/* {% if prod %}pr-{%- endif %}api:8000
+    reverse_proxy /jaeger/* jaeger:16686
     reverse_proxy /* {% if prod %}pr-{%- endif %}web:5173
 }
 
