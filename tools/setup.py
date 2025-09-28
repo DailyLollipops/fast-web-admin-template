@@ -41,6 +41,18 @@ def create_compose_file(app_name: str, outfile: str):
         file.write(output)
 
 
+def create_compose_shared_file(app_name: str, outfile: str):
+    tpl_path = (TEMPLATES_DIR / 'docker-compose.shared.yml.j2')
+    with open(tpl_path) as f:
+        template_content = f.read()
+
+    template = Template(template_content)
+    output = template.render(app_name=app_name)
+
+    with open(outfile, 'w') as file:
+        file.write(output)
+
+
 def create_caddy_file():
     tpl_path = (TEMPLATES_DIR / 'Caddyfile.j2')
     config_path = Path(__file__).parent.parent / 'provision' / 'caddy'
@@ -56,6 +68,10 @@ def create_caddy_file():
 
     output = template.render(domain='domain.com', prod=True)
     with open(config_path / 'Caddyfile.prod', 'w') as file:
+        file.write(output)
+
+    output = template.render(domain='localhost', prod=False)
+    with open(config_path / 'Caddyfile.shared', 'w') as file:
         file.write(output)
 
 
@@ -79,6 +95,13 @@ def generate_compose_file(app_name: str, outfile: str):
 
 
 @click.command()
+@click.argument('app_name')
+@click.option('--outfile', '-n', default='docker-compose.shared.yml', help='Output file location')
+def generate_compose_shared_file(app_name: str, outfile: str):
+    create_compose_shared_file(app_name, outfile)
+
+
+@click.command()
 def generate_caddy_config():
     create_caddy_file()
 
@@ -88,11 +111,13 @@ def generate_caddy_config():
 def bootstrap(app_name: str):
     create_env_file(app_name, '.env')
     create_compose_file(app_name, 'docker-compose.yml')
+    create_compose_shared_file(app_name, 'docker-compose.shared.yml')
     create_caddy_file()
 
 
 cli.add_command(generate_env)
 cli.add_command(generate_compose_file)
+cli.add_command(generate_compose_shared_file)
 cli.add_command(generate_caddy_config)
 cli.add_command(bootstrap)
 

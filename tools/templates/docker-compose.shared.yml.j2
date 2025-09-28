@@ -1,0 +1,115 @@
+name: "{{ app_name }}"
+
+x-custom:
+  python-env: &python-env
+    PYTHONPATH: /workspace:/workspace/app:/workspace/api:/workspace/testing
+    PYTHONDONTWRITEBYTECODE: 1
+    PYTHONUNBUFFERED: 1
+  mysql-env: &mysql-env
+    MYSQL_HOST: ${MYSQL_HOST:-mysql}
+    MYSQL_PORT: ${MYSQL_PORT:-3306}
+    MYSQL_DATABASE: ${MYSQL_DATABASE:-{{ app_name }}}
+    MYSQL_USER: ${MYSQL_USER:-user}
+    MYSQL_PASSWORD: ${MYSQL_PASSWORD:-password}
+    DATABASE_URL: mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}
+    DATABASE_URL_ASYNC: mysql+aiomysql://${MYSQL_USER}:${MYSQL_PASSWORD}@${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}
+  redis-env: &redis-env
+    REDIS_HOST: ${REDIS_HOST:-redis}
+    REDIS_PORT: ${REDIS_PORT:-6379}
+  web-env: &web-env
+    VITE_BASE_API_URL: ${VITE_BASE_API_URL:-/api}
+    VITE_APP_NAME: ${VITE_APP_NAME:-{{ app_name }}}
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./provision/mysql:/docker-entrypoint-initdb.d
+    networks:
+      - app_network
+      - proxy
+
+  redis:
+    image: redis:latest
+    networks:
+      - app_network
+      - proxy
+
+  worker:
+    build:
+      target: worker
+    volumes:
+      - ./api:/workspace/app
+    command: uv run rq worker email notification
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - app_network
+    environment:
+      <<:
+        - *python-env
+        - *mysql-env
+        - *redis-env
+
+  api:
+    build:
+      target: api
+    volumes:
+      - ./api:/workspace/app
+    command: uv run fastapi run /workspace/app/main.py --host 0.0.0.0 --port 8000
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - app_network
+      - proxy
+    environment:
+      <<:
+        - *python-env
+        - *mysql-env
+        - *redis-env
+      SECRET_KEY: ${SECRET_KEY}
+
+  web:
+    build:
+      target: web_prod
+    command: serve -s dist -l 5173
+    depends_on:
+      - pr-api
+    networks:
+      - app_network
+      - proxy
+
+  caddy:
+    image: caddy:latest
+    container_name: {{ app_name }}_caddy
+    ports:
+      - 80
+      - 443
+    volumes:
+      - ./provision/caddy/Caddyfile.shared:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - pr-web
+      - pr-api
+    networks:
+      - app_network
+      - proxy
+
+volumes:
+  mysql_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  app_network:
+  proxy:
+    external: true
