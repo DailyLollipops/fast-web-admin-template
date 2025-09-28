@@ -26,6 +26,15 @@ x-custom:
     OTEL_SERVICE_NAME: ${APP_NAME:-sample}
     OTEL_EXPORTER_JAEGER_ENDPOINT: http://jaeger:14268/api/traces
     OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+  mysql-testing-env: &mysql-testing-env
+    MYSQL_HOST: ${MYSQL_HOST:-mysql}
+    MYSQL_PORT: ${MYSQL_PORT:-3306}
+    MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-password}
+    MYSQL_DATABASE: ${MYSQL_DATABASE:-test_db}
+    MYSQL_USER: ${MYSQL_USER:-user}
+    MYSQL_PASSWORD: ${MYSQL_PASSWORD:-password}
+    DATABASE_URL: mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@${MYSQL_HOST}:${MYSQL_PORT}/test_db
+    DATABASE_URL_ASYNC: mysql+aiomysql://${MYSQL_USER}:${MYSQL_PASSWORD}@${MYSQL_HOST}:${MYSQL_PORT}/test_db
 
 services:
   mysql:
@@ -186,6 +195,27 @@ services:
       - app_network
     profiles:
       - prod
+
+  testing:
+    build:
+      target: testing
+    volumes:
+      - ./api:/workspace/api
+      - ./web:/workspace/web
+      - ./testing:/workspace/testing
+    environment:
+      <<:
+        - *python-env
+        - *mysql-testing-env
+        - *redis-env
+        - *api-env
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - app_network
+    profiles:
+      - testing
 
 volumes:
   mysql_data:
