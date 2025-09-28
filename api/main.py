@@ -31,31 +31,25 @@ app.include_router(app_setting_router, prefix='/api')
 app.include_router(role_access_control_router, prefix='/api')
 app.include_router(template_router, prefix='/api')
 
-app.mount("/api/static", StaticFiles(directory=STATIC_DIR), name='static')
+app.mount('/api/static', StaticFiles(directory=STATIC_DIR), name='static')
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Adjust to restrict access as needed
+    allow_origins=['*'],  # Adjust to restrict access as needed
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=['*'],
+    allow_headers=['*'],
 )
-
-
-@app.get("/api/health", tags=["Health"])
-async def health_check():
-    raise NotImplementedError("Health check not implemented yet.")
-
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    trace_id = getattr(request.state, "trace_id", "0")
-    elapsed_ms = getattr(request.state, "elapsed_ms", 0)
+    trace_id = getattr(request.state, 'trace_id', '0')
+    elapsed_ms = getattr(request.state, 'elapsed_ms', 0)
     return JSONResponse(
-        content={"detail": "Internal Server Error"},
+        content={'detail': 'Internal Server Error'},
         status_code=500,
         headers={
-            "X-Trace-ID": trace_id,
-            "X-Elapsed-Time": f"{elapsed_ms:.2f}ms",
+            'X-Trace-ID': trace_id,
+            'X-Elapsed-Time': f'{elapsed_ms:.2f}ms',
         },
     )
