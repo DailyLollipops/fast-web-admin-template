@@ -11,7 +11,7 @@ RUN apt-get update \
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
     && uv venv /workspace
 
-COPY uv.lock pyproject.toml /workspace/
+COPY uv.lock pyproject.toml .python-version /workspace/
 WORKDIR /workspace/app
 
 FROM base_python AS api
