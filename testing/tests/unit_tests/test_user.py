@@ -73,6 +73,15 @@ async def test_user_crud(auth_header, expected_status_codes):
                 continue
             assert original_data[k] == data[k]
 
+        # Test login
+        async with httpx.AsyncClient(base_url=API_URL) as client:
+            login_response = await client.post(
+                '/auth/login',
+                data={'username': original_data['email'], 'password': original_data['password']},
+            )
+
+        assert login_response.status_code == 200
+
     # Get list
     async with httpx.AsyncClient(base_url=API_URL) as client:
         get_list_response = await client.get('/users', headers=auth_header)
@@ -98,6 +107,15 @@ async def test_user_crud(auth_header, expected_status_codes):
             if k in skip_checks:
                 continue
             assert new_data[k] == data[k]
+
+        # Test login
+        async with httpx.AsyncClient(base_url=API_URL) as client:
+            login_response = await client.post(
+                '/auth/login',
+                data={'username': new_data['email'], 'password': new_data['password']},
+            )
+
+        assert login_response.status_code == 200
 
     # Delete
     async with httpx.AsyncClient(base_url=API_URL) as client:

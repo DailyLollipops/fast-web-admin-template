@@ -4,12 +4,14 @@ from pathlib import Path
 from typing import Annotated
 
 import bcrypt
+from constants import ApplicationSettings, VerificationMethod
 from database import get_async_db
+from database.models.application_setting import ApplicationSetting
 from database.models.notification import Notification
 from database.models.user import User
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import or_
-from sqlmodel import delete
+from sqlmodel import delete, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from .auth import get_authenticated_user
@@ -44,6 +46,17 @@ async def create_user(
             file_path = PROFILE_DIR / uuid_str
             if saved_path := save_base64_image(data.profile, str(file_path)): # type: ignore
                 data.profile = f'/static/profiles/{Path(saved_path).name}' # type: ignore
+
+        result = await db.exec(
+            select(ApplicationSetting)
+            .where(ApplicationSetting.name == ApplicationSettings.USER_VERIFICATION)
+        )
+        setting = result.first()
+        if not setting:
+            raise Exception('User verification setting not found. Perhaps you forgot to run migration?')
+        
+        if setting.value == VerificationMethod.NONE:
+            data.verified = True # type: ignore
 
         obj = User(**data.model_dump())
         result = await queryutil.create_one(db, obj)
