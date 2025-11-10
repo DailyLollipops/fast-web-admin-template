@@ -112,7 +112,7 @@ services:
       target: web_prod
     command: serve -s dist -l 5173
     depends_on:
-      - pr-api
+      - api
     networks:
       - app_network
       - proxy
@@ -128,8 +128,8 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
-      - pr-web
-      - pr-api
+      - web
+      - api
     environment:
       <<: *caddy-env
     networks:

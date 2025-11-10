@@ -79,7 +79,7 @@ def create_caddy_file():
     with open(config_path / 'Caddyfile.prod', 'w') as file:
         file.write(output)
 
-    output = template.render(domain='localhost', prod=False)
+    output = template.render(domain=':80', prod=False)
     with open(config_path / 'Caddyfile.shared', 'w') as file:
         file.write(output)
 
