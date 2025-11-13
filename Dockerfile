@@ -5,7 +5,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PATH="/root/.local/bin:$PATH"
 
 RUN apt-get update \
-    && apt-get install -y curl build-essential \
+    && apt-get install -y curl libffi-dev build-essential \
     && rm -rf /var/lib/apt/lists/* 
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
