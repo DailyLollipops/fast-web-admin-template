@@ -5,18 +5,14 @@ import {
   CreateParams,
 } from "react-admin";
 import { stringify } from "query-string";
-import { AUTH_KEY, API_URL } from "../constants";
+import { API_URL } from "../constants";
 import { alternateJoin } from "../utils";
 
 const httpClient = (
   url: string,
   options: fetchUtils.Options | undefined = {},
 ) => {
-  const token = localStorage.getItem(AUTH_KEY);
-  options.headers = new Headers(options.headers || {});
-  if (token) {
-    options.headers.set("Authorization", `Bearer ${token}`);
-  }
+  options.credentials = "include";
   return fetchUtils.fetchJson(url, options);
 };
 

@@ -9,7 +9,7 @@ from database.models.application_setting import ApplicationSetting
 from database.models.role_access_control import RoleAccessControl
 from database.models.template import Template
 from database.models.user import User
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from fastapi import APIRouter, Cookie, Depends, Header, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from itsdangerous import URLSafeTimedSerializer
 from passlib.context import CryptContext
@@ -93,7 +93,7 @@ async def get_current_user(
     request: Request,
     db: Annotated[AsyncSession, Depends(get_async_db)],
     api_key: Annotated[str | None, Header()] = None,
-    token: Annotated[str | None, Depends(oauth2_scheme)] = None,
+    access_token: Annotated[str | None, Cookie()] = None,
 ):
     user = None
     if api_key:
@@ -103,9 +103,9 @@ async def get_current_user(
             print(f'API Key authentication failed: {str(e)}')
             pass
 
-    if token:
+    if access_token:
         try:
-            user = await get_user_by_jwt_token(db, token)
+            user = await get_user_by_jwt_token(db, access_token)
         except HTTPException as e:
             print(f'Token authentication failed: {str(e)}')
             pass
@@ -224,11 +224,12 @@ async def get_template(db: AsyncSession, name: str):
 
 @router.post('/auth/register', tags=TAGS)
 async def register_user(
+    response: Response,
     data: RegisterForm,
     db: Annotated[AsyncSession, Depends(get_async_db)],
     notification_queue: Annotated[Queue, Depends(get_notification_queue)],
     email_queue: Annotated[Queue, Depends(get_email_queue)]
-) -> Token:
+) -> Response:
     if data.password != data.confirm_password:
         raise HTTPException(
             status_code=400,
@@ -293,14 +294,23 @@ async def register_user(
             recipients=[new_user.email]
         )
 
-    return Token(access_token=access_token, token_type='bearer')
+    response.status_code = status.HTTP_200_OK
+    response.set_cookie(
+        key='access_token',
+        value=access_token,
+        httponly=True,
+        secure=True,
+        samesite='lax'
+    )
+    return response
 
 
 @router.post('/auth/login', tags=TAGS)
 async def login_user(
+    response: Response,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Annotated[AsyncSession, Depends(get_async_db)],
-) -> Token:
+) -> Response:
     user = await authenticate_user(form_data.username, form_data.password, db)
     if not user:
         raise HTTPException(status_code=401, detail='User not found')
@@ -308,7 +318,23 @@ async def login_user(
         raise HTTPException(status_code=401, detail='User not verified. Please contact admin for more details!')
 
     access_token = create_access_token(data={'sub': user.email}, salt='user-auth')
-    return Token(access_token=access_token, token_type='bearer')
+
+    response.status_code = status.HTTP_200_OK
+    response.set_cookie(
+        key='access_token',
+        value=access_token,
+        httponly=True,
+        secure=True,
+        samesite='lax'
+    )
+    return response
+
+
+@router.post('/auth/logout', tags=TAGS)
+async def logout_user(response: Response,):
+    response.status_code = status.HTTP_200_OK
+    response.delete_cookie(key='access_token')
+    return response
 
 
 @router.post('/auth/forgot_password', response_model=ActionResponse, tags=TAGS)

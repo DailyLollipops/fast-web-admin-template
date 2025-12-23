@@ -35,16 +35,12 @@ def test_authenticate_user(api_client: APIRequestContext, user):
     login_response = api_client.post('/api/auth/login', form=login_data)
     assert login_response.status == 200
 
-    data = login_response.json()
-    access_token = data['access_token']
-    auth_header = {'Authorization': f'Bearer {access_token}'}
-
     # Me
-    me_response = api_client.get('/api/auth/me', headers=auth_header)
+    me_response = api_client.get('/api/auth/me')
     assert me_response.status == 200
 
     # Generate API key
-    generate_api_response = api_client.post('/api/auth/generate_api_key', headers=auth_header)
+    generate_api_response = api_client.post('/api/auth/generate_api_key')
     assert generate_api_response.status == 200
 
 

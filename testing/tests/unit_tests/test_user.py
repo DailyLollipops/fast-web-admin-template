@@ -40,6 +40,7 @@ def get_crud_params():
     get_crud_params(),
 )
 def test_user_crud(
+    api_client: APIRequestContext,
     authenticated_api_client,
     user_key: str,
     expected_status_codes: dict[str, int],
@@ -82,7 +83,7 @@ def test_user_crud(
             assert original_data[k] == data[k]
 
         # Verify login with created user
-        login_response = client.post(
+        login_response = api_client.post(
             '/api/auth/login',
             form={
                 'username': original_data['email'],
@@ -118,7 +119,7 @@ def test_user_crud(
             assert new_data[k] == data[k]
 
         # Verify login with updated credentials
-        login_response = client.post(
+        login_response = api_client.post(
             '/api/auth/login',
             form={
                 'username': new_data['email'],

@@ -1,5 +1,5 @@
 import { AuthProvider } from "react-admin";
-import { AUTH_KEY, AUTH_DETAILS, API_URL } from "../constants";
+import { AUTH_DETAILS, API_URL } from "../constants";
 
 export const authProvider: AuthProvider = {
   login: async ({ username, password }) => {
@@ -9,6 +9,7 @@ export const authProvider: AuthProvider = {
 
     const loginResponse = await fetch(`${API_URL}/auth/login`, {
       method: "POST",
+      credentials: "include",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
@@ -20,14 +21,9 @@ export const authProvider: AuthProvider = {
       return Promise.reject(error.message || "Login failed");
     }
 
-    const { access_token } = await loginResponse.json();
-    localStorage.setItem(AUTH_KEY, access_token);
-
     const identityResponse = await fetch(`${API_URL}/auth/me`, {
       method: "GET",
-      headers: {
-        Authorization: `Bearer ${access_token}`,
-      },
+      credentials: "include",
     });
 
     if (!identityResponse.ok) {
@@ -37,26 +33,25 @@ export const authProvider: AuthProvider = {
 
     const authDetails = await identityResponse.text();
     localStorage.setItem(AUTH_DETAILS, authDetails);
-    // window.location.reload();
 
     return Promise.resolve();
   },
 
   logout: async () => {
-    localStorage.removeItem(AUTH_KEY);
+    await fetch(`${API_URL}/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    });
     return Promise.resolve();
   },
 
   checkAuth: async () => {
-    return localStorage.getItem(AUTH_KEY)
-      ? Promise.resolve()
-      : Promise.reject();
+    return Promise.resolve();
   },
 
   checkError: async (error) => {
     const status = error.status;
     if (status === 401 || status === 403) {
-      localStorage.removeItem(AUTH_KEY);
       return Promise.reject();
     }
     return Promise.resolve();

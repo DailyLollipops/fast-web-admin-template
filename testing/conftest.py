@@ -156,19 +156,9 @@ def authenticated_api_client(playwright: Playwright) -> Generator[Callable[[str]
         )
 
         assert login.ok, f'Login failed for {user_key}: {login.text()}'
-        token = login.json()['access_token']
+        contexts.append(context)
 
-        auth_context = playwright.request.new_context(
-            base_url=BASE_URL,
-            extra_http_headers={
-                'Authorization': f'Bearer {token}'
-            },
-        )
-
-        contexts.append(auth_context)
-        context.dispose()
-
-        return auth_context
+        return context
 
     yield _login
 
