@@ -6,8 +6,8 @@
         {$JAEGER_USER} {$JAEGER_PASSWORD_HASH}
     }
 
-    reverse_proxy /api/* {% if prod %}pr-{%- endif %}api:8000
-    reverse_proxy /jaeger/* jaeger:16686
-    reverse_proxy /* {% if prod %}pr-{%- endif %}web:5173
+    reverse_proxy /api/* {% if prefix %}{{ prefix }}-{%- endif %}api:8000
+    reverse_proxy /jaeger/* {% if prefix %}{{ prefix }}-{%- endif %}jaeger:16686
+    reverse_proxy /* {% if prefix %}{{ prefix }}-{%- endif %}web:5173
 }
 

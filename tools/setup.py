@@ -75,7 +75,7 @@ def create_caddy_file(app_name: str):
     with open(config_path / 'Caddyfile.local', 'w') as file:
         file.write(output)
 
-    output = template.render(domain='domain.com', prefix='pr')
+    output = template.render(domain='domain.com', prefix='prod')
     with open(config_path / 'Caddyfile.prod', 'w') as file:
         file.write(output)
 
@@ -103,13 +103,6 @@ def generate_env(app_name: str, jaeger_username: str, jaeger_password: str, outf
 @click.option('--outfile', '-n', default='docker-compose.yml', help='Output file location')
 def generate_compose_file(app_name: str, outfile: str):
     create_compose_file(app_name, outfile)
-
-
-@click.command()
-@click.argument('app_name')
-@click.option('--outfile', '-n', default='docker-compose.shared.yml', help='Output file location')
-def generate_compose_shared_file(app_name: str, outfile: str):
-    create_compose_shared_file(app_name, outfile)
 
 
 @click.command()
@@ -160,7 +153,6 @@ def update_jaeger_credentials(username: str, password: str, env_file: str):
 
 cli.add_command(generate_env)
 cli.add_command(generate_compose_file)
-cli.add_command(generate_compose_shared_file)
 cli.add_command(generate_caddy_config)
 cli.add_command(bootstrap)
 cli.add_command(update_jaeger_credentials)

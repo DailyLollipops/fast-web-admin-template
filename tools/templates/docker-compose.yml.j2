@@ -94,7 +94,7 @@ services:
     networks:
       - app_network
 
-  api:
+  dev-api:
     build:
       target: api
     volumes:
@@ -115,7 +115,7 @@ services:
     profiles:
       - dev
 
-  web:
+  dev-web:
     build:
       target: web
     volumes:
@@ -134,15 +134,15 @@ services:
     profiles:
       - dev
 
-  caddy:
+  dev-caddy:
     image: caddy:latest
     ports:
       - 80:80
       - 443:443
     volumes:
       - ./provision/caddy/Caddyfile.local:/etc/caddy/Caddyfile
-      - caddy_data:/data
-      - caddy_config:/config
+      - dev_caddy_data:/data
+      - dev_caddy_config:/config
     depends_on:
       - web
       - api
@@ -153,7 +153,7 @@ services:
     profiles:
       - dev
 
-  pr-api:
+  prod-api:
     build:
       target: api
     volumes:
@@ -174,7 +174,7 @@ services:
     profiles:
       - prod
 
-  pr-web:
+  prod-web:
     build:
       target: web_prod
     command: serve -s dist -l 5173
@@ -185,15 +185,15 @@ services:
     profiles:
       - prod
 
-  pr-caddy:
+  prod-caddy:
     image: caddy:latest
     ports:
       - 80:80
       - 443:443
     volumes:
       - ./provision/caddy/Caddyfile.prod:/etc/caddy/Caddyfile
-      - pr_caddy_data:/data
-      - pr_caddy_config:/config
+      - prod_caddy_data:/data
+      - prod_caddy_config:/config
     depends_on:
       - pr-web
       - pr-api
@@ -203,6 +203,63 @@ services:
       - app_network
     profiles:
       - prod
+
+  shared-api:
+    build:
+      target: api
+    container_name: {{ app_name }}-api
+    volumes:
+      - ./api:/workspace/app
+    command: uv run fastapi run /workspace/app/main.py --host 0.0.0.0 --port 8000
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - app_network
+      - proxy
+    environment:
+      <<:
+        - *python-env
+        - *mysql-env
+        - *redis-env
+        - *api-env
+        - *otel-env
+    profiles:
+      - shared
+
+  shared-web:
+    build:
+      target: web_prod
+    container_name: {{ app_name }}-web
+    command: serve -s dist -l 5173
+    depends_on:
+      - api
+    networks:
+      - app_network
+      - proxy
+    profiles:
+      - shared
+
+  shared-caddy:
+    image: caddy:latest
+    container_name: {{ app_name }}-caddy
+    ports:
+      - 80
+      - 443
+    volumes:
+      - ./provision/caddy/Caddyfile.shared:/etc/caddy/Caddyfile
+      - shared_caddy_data:/data
+      - shared_caddy_config:/config
+    depends_on:
+      - web
+      - api
+    environment:
+      <<: *caddy-env
+    networks:
+      - app_network
+      - proxy
+    profiles:
+      - shared
 
   testing:
     build:
@@ -227,10 +284,12 @@ services:
 
 volumes:
   mysql_data:
-  caddy_data:
-  caddy_config:
-  pr_caddy_data:
-  pr_caddy_config:
+  dev_caddy_data:
+  dev_caddy_config:
+  prod_caddy_data:
+  prod_caddy_config:
+  shared_caddy_data:
+  shared_caddy_config:
 
 networks:
   app_network:

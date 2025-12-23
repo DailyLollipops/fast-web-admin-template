@@ -41,7 +41,7 @@ For prod environment, update domain in `provision/Caddyfile.prod`
 
 ### 4. Start containers
 
-Use either `dev` or `prod` profiles to start containers:
+Use either `dev` or `prod` or `shared (for shared hosting environments)` profiles to start containers:
 
 ```bash
 docker compose --profile <profile> up -d --remove-orphans
@@ -50,7 +50,7 @@ docker compose --profile <profile> up -d --remove-orphans
 ### 5. Run initial migration
 
 ```bash
-docker compose exec api make run-migration
+docker compose exec dev-api make run-migration
 ```
 
 ### 6. Generating the system account
@@ -59,10 +59,10 @@ System accounts can manage system application settings.
 To create one:
 
 ```bash
-docker compose exec api make create-superuser
+docker compose exec dev-api make create-superuser
 ```
 
-_Note: mentions on container `api` refer to the dev `api` container, if on production mode (e.g. `--profile prod`), use `pr-api` instead._
+_Note: mentions on container `dev-api` refer to the dev `dev-api` container, if on production mode (e.g. `--profile prod`), use `prod-api` instead._
 
 ## 🧩 Development
 
@@ -71,7 +71,7 @@ _Note: mentions on container `api` refer to the dev `api` container, if on produ
 After defining custom model in `api/models/`, generate and migrate with alembic:
 
 ```bash
-docker compose exec api make create-migration MESSAGE="$message"
+docker compose exec dev-api make create-migration MESSAGE="$message"
 ```
 
 ### Generate API endpoint
@@ -104,7 +104,7 @@ Update factory file with defined custom list or override the random generator fu
 After updating the factory file, run seeder with:
 
 ```bash
-docker compose exec api uv run database/seeder.py seed-<mode>
+docker compose exec dev-api uv run database/seeder.py seed-<mode>
 
 modes:
     - random    # calls factory.random_generator
