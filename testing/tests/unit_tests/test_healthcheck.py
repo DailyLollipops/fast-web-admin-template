@@ -1,11 +1,6 @@
-import httpx
-import pytest
-
-from testing.fixtures import API_URL
+from playwright.sync_api import APIRequestContext
 
 
-@pytest.mark.asyncio
-async def test_healthcheck():
-    async with httpx.AsyncClient(base_url=API_URL) as client:
-        response = await client.get('/docs')
-    assert response.status_code == 200
+def test_healthcheck(api_client: APIRequestContext):
+    response = api_client.get('/api/docs')
+    assert response.status == 200

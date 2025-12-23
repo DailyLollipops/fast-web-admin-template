@@ -51,6 +51,7 @@ COPY ./web/package*.json /workspace/web/
 
 WORKDIR /workspace
 RUN uv sync --all-groups
+RUN uv run playwright install
 
 WORKDIR /workspace/web
 RUN npm install

@@ -1,7 +1,5 @@
-import httpx
 import pytest
-
-from testing.fixtures import API_URL
+from playwright.sync_api import APIRequestContext
 
 
 USERS = [
@@ -26,45 +24,38 @@ USERS = [
 ]
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize('user', USERS)
-async def test_authenticate_user(user):
-    async with httpx.AsyncClient(base_url=API_URL) as client:
-        # Register
-        register_response = await client.post('/auth/register', json=user)
-        assert register_response.status_code == 200
+def test_authenticate_user(api_client: APIRequestContext, user):
+    # Register
+    register_response = api_client.post('/api/auth/register', data=user)
+    assert register_response.status == 200
 
-        # Login
-        login_data = {'username': user['email'], 'password': user['password']}
-        login_response = await client.post('/auth/login', data=login_data)
-        assert login_response.status_code == 200
+    # Login
+    login_data = {'username': user['email'], 'password': user['password']}
+    login_response = api_client.post('/api/auth/login', form=login_data)
+    assert login_response.status == 200
 
-        data = login_response.json()
-        access_token = data['access_token']
-        auth_header = {'Authorization': f'Bearer {access_token}'}
+    data = login_response.json()
+    access_token = data['access_token']
+    auth_header = {'Authorization': f'Bearer {access_token}'}
 
-        # Me
-        me_response = await client.get('/auth/me', headers=auth_header)
-        assert me_response.status_code == 200
+    # Me
+    me_response = api_client.get('/api/auth/me', headers=auth_header)
+    assert me_response.status == 200
 
-        # Generate API key
-        generate_api_response = await client.post('/auth/generate_api_key', headers=auth_header)
-        assert generate_api_response.status_code == 200
-
+    # Generate API key
+    generate_api_response = api_client.post('/api/auth/generate_api_key', headers=auth_header)
+    assert generate_api_response.status == 200
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize('user', USERS)
-async def test_login_wrong_password(user):
-    async with httpx.AsyncClient(base_url=API_URL) as client:
-        login_data = {'username': user['email'], 'password': 'wrongpass'}
-        login_response = await client.post('/auth/login', data=login_data)
-        assert login_response.status_code == 401
+def test_login_wrong_password(api_client: APIRequestContext, user):
+    login_data = {'username': user['email'], 'password': 'wrongpass'}
+    login_response = api_client.post('/api/auth/login', form=login_data)
+    assert login_response.status == 401
 
 
-@pytest.mark.asyncio
-async def test_login_wrong_email():
-    async with httpx.AsyncClient(base_url=API_URL) as client:
-        login_data = {'username': 'doesnotexist@example.com', 'password': 'password'}
-        login_response = await client.post('/auth/login', data=login_data)
-        assert login_response.status_code == 401
+def test_login_wrong_email(api_client: APIRequestContext):
+    login_data = {'username': 'doesnotexist@example.com', 'password': 'password'}
+    login_response = api_client.post('/api/auth/login', form=login_data) # type: ignore
+    assert login_response.status == 401

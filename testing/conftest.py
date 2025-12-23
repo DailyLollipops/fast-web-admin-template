@@ -2,19 +2,21 @@ import os
 import random
 import shutil
 import subprocess
+from collections.abc import Callable, Generator
 from pathlib import Path
 
 import bcrypt
 import httpx
 import pytest
 from faker import Faker
+from playwright.sync_api import APIRequestContext, Playwright
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import Session, create_engine, text
 
 from api.database.models.notification import Notification
 from api.database.models.user import User
-from testing.fixtures import API_URL, USERS
+from testing.fixtures import API_URL, BASE_URL, USERS
 
 
 DATABASE_URL = os.getenv('DATABASE_URL') or ''
@@ -37,12 +39,12 @@ def session_setup_and_teardown():
         with Session(conn) as session:
             # Seed users
             users: list[User] = []
-            for user in USERS:
+            for role, user in USERS.items():
                 new_user = User(
                     name=user['name'],
                     email=user['email'],
                     password=bcrypt.hashpw(user['password'].encode('utf-8'), bcrypt.gensalt()).decode('utf-8'),
-                    role=user['role'],
+                    role=role,
                     verified=True
                 )
                 users.append(new_user)
@@ -54,7 +56,7 @@ def session_setup_and_teardown():
 
             # Seed notifications
             for user in users:
-                for _ in range(random.randint(1, 5)):
+                for _ in range(random.randint(3, 5)):
                     notification = Notification(
                         user_id=user.id,
                         triggered_by=user.id,
@@ -115,7 +117,7 @@ def db_session():
 
 @pytest.fixture
 async def auth_header(request):
-    """Logs in user based on param and returns the Authorization header."""
+    '''Logs in user based on param and returns the Authorization header.'''
     user = request.param
     print(f'User: {user}')
     async with httpx.AsyncClient(base_url=API_URL) as client:
@@ -126,3 +128,49 @@ async def auth_header(request):
         assert response.status_code == 200, f'Login failed for {user['role']}'
         token = response.json()['access_token']
         return {'Authorization': f'Bearer {token}'}
+
+
+@pytest.fixture
+def api_client(playwright: Playwright) -> Generator[APIRequestContext, None]:
+    request_context = playwright.request.new_context(
+        base_url=BASE_URL
+    )
+    yield request_context
+    request_context.dispose()
+
+
+@pytest.fixture
+def authenticated_api_client(playwright: Playwright) -> Generator[Callable[[str], APIRequestContext], None, None]:
+    contexts = []
+
+    def _login(user_key: str):
+        user = USERS[user_key]
+        context = playwright.request.new_context(base_url=BASE_URL)
+
+        login = context.post(
+            '/api/auth/login',
+            form={
+                'username': user['email'],
+                'password': user['password'],
+            },
+        )
+
+        assert login.ok, f'Login failed for {user_key}: {login.text()}'
+        token = login.json()['access_token']
+
+        auth_context = playwright.request.new_context(
+            base_url=BASE_URL,
+            extra_http_headers={
+                'Authorization': f'Bearer {token}'
+            },
+        )
+
+        contexts.append(auth_context)
+        context.dispose()
+
+        return auth_context
+
+    yield _login
+
+    for ctx in contexts:
+        ctx.dispose()

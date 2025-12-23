@@ -1,8 +1,8 @@
-import httpx
 import pytest
 from faker import Faker
+from playwright.sync_api import APIRequestContext
 
-from testing.fixtures import API_URL, USERS
+from testing.fixtures import USERS
 
 
 def get_crud_params():
@@ -26,88 +26,87 @@ def get_crud_params():
             'delete': 403,
         },
     }
-    
+
     params = []
-    for user in USERS:
-        expected = ROLE_EXPECTED_STATUS.get(user['role'])
-        params.append((user, expected))
+    for role, _ in USERS.items():
+        expected = ROLE_EXPECTED_STATUS[role]
+        params.append((role, expected))
+
     return params
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize(
-    'auth_header, expected_status_codes',
+    'user_key, expected_status_codes',
     get_crud_params(),
-    indirect=['auth_header'],
 )
-async def test_application_setting_crud(auth_header, expected_status_codes):
-    """Test application setting CRUD workflow per user."""
-    faker_factory = Faker()
+def test_application_setting_crud(
+    authenticated_api_client,
+    user_key: str,
+    expected_status_codes: dict[str, int],
+):
+    """
+    Test application setting CRUD workflow per user role.
+    """
+    client: APIRequestContext = authenticated_api_client(user_key)
+
+    faker = Faker()
     application_setting_id = 1
+
     original_data = {
-        'name': faker_factory.name(),
-        'value': faker_factory.word(),
+        'name': faker.name(),
+        'value': faker.word(),
     }
+
     new_data = {
-        'name': faker_factory.name(),
-        'value': faker_factory.word(),
+        'name': faker.name(),
+        'value': faker.word(),
     }
 
     # Create
-    async with httpx.AsyncClient(base_url=API_URL) as client:
-        create_response = await client.post('/application_settings', json=original_data, headers=auth_header)
+    create_response = client.post(
+        '/api/application_settings',
+        data=original_data,
+    )
+    assert create_response.status == expected_status_codes['create']
 
-    assert create_response.status_code == expected_status_codes['create']
-    if create_response.status_code == 200:
+    if create_response.status == 200:
         data = create_response.json()
         application_setting_id = data['id']
 
-    # Verify create
-    if create_response.status_code == 200:
-        data = create_response.json()
-        for k, _ in original_data.items():
+        for k in original_data:
             assert original_data[k] == data[k]
 
     # Get list
-    async with httpx.AsyncClient(base_url=API_URL) as client:
-        get_list_response = await client.get('/application_settings', headers=auth_header)
-
-    assert get_list_response.status_code == expected_status_codes['read']
+    get_list_response = client.get('/api/application_settings')
+    assert get_list_response.status == expected_status_codes['read']
 
     # Get one
-    async with httpx.AsyncClient(base_url=API_URL) as client:
-        get_one_response = await client.get(f'/application_settings/{application_setting_id}', headers=auth_header)
-
-    assert get_one_response.status_code == expected_status_codes['read']
+    get_one_response = client.get(
+        f'/api/application_settings/{application_setting_id}'
+    )
+    assert get_one_response.status == expected_status_codes['read']
 
     # Update
-    async with httpx.AsyncClient(base_url=API_URL) as client:
-        update_response = await client.patch(
-            f'/application_settings/{application_setting_id}',
-            json=new_data,
-            headers=auth_header
-        )
+    update_response = client.patch(
+        f'/api/application_settings/{application_setting_id}',
+        data=new_data,
+    )
+    assert update_response.status == expected_status_codes['update']
 
-    assert update_response.status_code == expected_status_codes['update']
-
-    # Verify update
-    if update_response.status_code == 200:
+    if update_response.status == 200:
         data = update_response.json()
-        for k, _ in new_data.items():
+        for k in new_data:
             assert new_data[k] == data[k]
 
     # Delete
-    async with httpx.AsyncClient(base_url=API_URL) as client:
-        delete_response = await client.delete(f'/application_settings/{application_setting_id}', headers=auth_header)
-
-    assert delete_response.status_code == expected_status_codes['delete']
+    delete_response = client.delete(
+        f'/api/application_settings/{application_setting_id}'
+    )
+    assert delete_response.status == expected_status_codes['delete']
 
     # Verify delete
-    if delete_response.status_code == 200:
-        async with httpx.AsyncClient(base_url=API_URL) as client:
-            verify_delete_response = await client.get(
-                f'/application_settings/{application_setting_id}',
-                headers=auth_header
-            )
-        
-        assert verify_delete_response.status_code == 404
+    if delete_response.status == 200:
+        verify_delete_response = client.get(
+            f'/api/application_settings/{application_setting_id}'
+        )
+        assert verify_delete_response.status == 404
