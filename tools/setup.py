@@ -50,18 +50,6 @@ def create_compose_file(app_name: str, outfile: str):
         file.write(output)
 
 
-def create_compose_shared_file(app_name: str, outfile: str):
-    tpl_path = (TEMPLATES_DIR / 'docker-compose.shared.yml.j2')
-    with open(tpl_path) as f:
-        template_content = f.read()
-
-    template = Template(template_content)
-    output = template.render(app_name=app_name)
-
-    with open(outfile, 'w') as file:
-        file.write(output)
-
-
 def create_caddy_file(app_name: str):
     tpl_path = (TEMPLATES_DIR / 'Caddyfile.j2')
     config_path = Path(__file__).parent.parent / 'provision' / 'caddy'
@@ -71,7 +59,7 @@ def create_caddy_file(app_name: str):
 
     template = Template(template_content)
 
-    output = template.render(domain='localhost', prefix=None)
+    output = template.render(domain='localhost', prefix='dev')
     with open(config_path / 'Caddyfile.local', 'w') as file:
         file.write(output)
 
@@ -118,7 +106,6 @@ def generate_caddy_config(app_name):
 def bootstrap(app_name: str, jaeger_username: str, jaeger_password: str):
     create_env_file(app_name, jaeger_username, jaeger_password, '.env')
     create_compose_file(app_name, 'docker-compose.yml')
-    create_compose_shared_file(app_name, 'docker-compose.shared.yml')
     create_caddy_file(app_name=app_name)
 
 
