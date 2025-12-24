@@ -29,6 +29,8 @@ def create_env_file(app_name: str, jaeger_username: str, jaeger_password: str, o
     output = template.render(
         app_name=app_name,
         app_key=secret_key,
+        access_token_ex=3600,
+        email_token_ex=900,
         jaeger_username=jaeger_username,
         jaeger_password=jaeger_password,
         jaeger_password_hash=hashed.replace('$', '$$'),

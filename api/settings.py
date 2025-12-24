@@ -4,6 +4,8 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     APP_NAME: str
     SECRET_KEY: str = 'change-me'
+    ACCESS_TOKEN_EX: int = 3600 # 1 hour
+    EMAIL_TOKEN_EX: int = 900 # 15 minutes
 
     MYSQL_HOST: str
     MYSQL_USER: str

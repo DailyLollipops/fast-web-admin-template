@@ -155,7 +155,7 @@ async def get_user_by_jwt_token(
     )
     try:
         serializer = URLSafeTimedSerializer(settings.SECRET_KEY)
-        payload = serializer.loads(token, max_age=ACCESS_TOKEN_EXPIRATION, salt='user-auth')
+        payload = serializer.loads(token, max_age=settings.ACCESS_TOKEN_EX, salt='user-auth')
         username: str = payload.get('sub')
         if username is None:
             raise credentials_exception
@@ -389,7 +389,7 @@ async def reset_password(
 
     try:
         serializer = URLSafeTimedSerializer(settings.SECRET_KEY)
-        payload = serializer.loads(token, max_age=ACCESS_TOKEN_EXPIRATION, salt='forgot-password')
+        payload = serializer.loads(token, max_age=settings.EMAIL_TOKEN_EX, salt='forgot-password')
         username: str = payload.get('sub')
         if username is None:
             raise credentials_exception
@@ -421,7 +421,7 @@ async def verify_email(
 
     try:
         serializer = URLSafeTimedSerializer(settings.SECRET_KEY)
-        payload = serializer.loads(token, max_age=ACCESS_TOKEN_EXPIRATION, salt='user-verification')
+        payload = serializer.loads(token, max_age=settings.EMAIL_TOKEN_EX, salt='user-verification')
         username: str = payload.get('sub')
         if username is None:
             raise credentials_exception
