@@ -5,6 +5,7 @@ class Settings(BaseSettings):
     APP_NAME: str
     SECRET_KEY: str = 'change-me'
     ACCESS_TOKEN_EX: int = 3600 # 1 hour
+    REFRESH_TOKEN_EX: int = 86400 # 1 day
     EMAIL_TOKEN_EX: int = 900 # 15 minutes
 
     MYSQL_HOST: str

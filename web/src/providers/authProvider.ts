@@ -1,6 +1,15 @@
 import { AuthProvider } from "react-admin";
 import { AUTH_DETAILS, API_URL } from "../constants";
 
+const refreshToken = async () => {
+  const response = await fetch(`${API_URL}/auth/refresh`, {
+    method: "POST",
+    credentials: "include",
+  });
+
+  return response.ok;
+};
+
 export const authProvider: AuthProvider = {
   login: async ({ username, password }) => {
     const formData = new URLSearchParams();
@@ -46,14 +55,44 @@ export const authProvider: AuthProvider = {
   },
 
   checkAuth: async () => {
+    const response = await fetch(`${API_URL}/auth/me`, {
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      return Promise.reject();
+    }
+
     return Promise.resolve();
   },
 
   checkError: async (error) => {
     const status = error.status;
-    if (status === 401 || status === 403) {
+    console.log("AuthProvider checkError status:", status);
+
+    if (status === 401) {
+      const refreshed = await refreshToken();
+
+      if (refreshed) {
+        const me = await fetch(`${API_URL}/auth/me`, {
+          credentials: "include",
+        });
+
+        if (me.ok) {
+          const authDetails = await me.text();
+          localStorage.setItem(AUTH_DETAILS, authDetails);
+          return Promise.resolve();
+        }
+      }
+
+      localStorage.removeItem(AUTH_DETAILS);
       return Promise.reject();
     }
+
+    if (status === 403) {
+      return Promise.reject();
+    }
+
     return Promise.resolve();
   },
 

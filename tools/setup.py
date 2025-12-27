@@ -30,6 +30,7 @@ def create_env_file(app_name: str, jaeger_username: str, jaeger_password: str, o
         app_name=app_name,
         app_key=secret_key,
         access_token_ex=3600,
+        refresh_token_ex=86400,
         email_token_ex=900,
         jaeger_username=jaeger_username,
         jaeger_password=jaeger_password,

@@ -257,7 +257,6 @@ async def register_user(
     await db.commit()
     await db.refresh(new_user)
 
-    access_token = create_access_token(data={'sub': data.email}, salt='user-auth')
     notification_queue.enqueue(
         notify_role,
         triggered_by=new_user.id,
@@ -294,13 +293,26 @@ async def register_user(
             recipients=[new_user.email]
         )
 
+    access_token = create_access_token(data={'sub': data.email}, salt='user-auth')
+    refresh_token = create_access_token(data={'sub': data.email}, salt='user-refresh')
+
     response.status_code = status.HTTP_200_OK
     response.set_cookie(
         key='access_token',
         value=access_token,
         httponly=True,
         secure=True,
-        samesite='lax'
+        samesite='lax',
+        max_age=settings.ACCESS_TOKEN_EX,
+    )
+    response.set_cookie(
+        key='refresh_token',
+        value=refresh_token,
+        httponly=True,
+        secure=True,
+        samesite='lax',
+        max_age=settings.REFRESH_TOKEN_EX,
+        path="/api/auth/refresh",
     )
     return response
 
@@ -318,6 +330,7 @@ async def login_user(
         raise HTTPException(status_code=401, detail='User not verified. Please contact admin for more details!')
 
     access_token = create_access_token(data={'sub': user.email}, salt='user-auth')
+    refresh_token = create_access_token(data={'sub': user.email}, salt='user-refresh')
 
     response.status_code = status.HTTP_200_OK
     response.set_cookie(
@@ -325,7 +338,69 @@ async def login_user(
         value=access_token,
         httponly=True,
         secure=True,
-        samesite='lax'
+        samesite='lax',
+        max_age=settings.ACCESS_TOKEN_EX,
+    )
+    response.set_cookie(
+        key='refresh_token',
+        value=refresh_token,
+        httponly=True,
+        secure=True,
+        samesite='lax',
+        max_age=settings.REFRESH_TOKEN_EX,
+        path="/api/auth/refresh",
+    )
+    return response
+
+
+@router.post('/auth/refresh', tags=TAGS)
+async def refresh_token(
+    response: Response,
+    db: Annotated[AsyncSession, Depends(get_async_db)],
+    refresh_token: Annotated[str | None, Cookie()] = None,
+):
+    if not refresh_token:
+        raise HTTPException(status_code=401, detail='No refresh token provided')
+
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail='Invalid refresh token',
+    )
+
+    try:
+        serializer = URLSafeTimedSerializer(settings.SECRET_KEY)
+        payload = serializer.loads(refresh_token, max_age=settings.ACCESS_TOKEN_EX, salt='user-refresh')
+        username: str = payload.get('sub')
+        if username is None:
+            raise credentials_exception
+    except Exception as ex:
+        raise credentials_exception from ex
+
+    result = await db.exec(select(User).where(User.email == username))
+    user = result.first()
+    if user is None:
+        raise credentials_exception
+
+    access_token = create_access_token(data={'sub': user.email}, salt='user-auth')
+    refresh_token = create_access_token(data={'sub': user.email}, salt='user-refresh')
+
+    response.status_code = status.HTTP_200_OK
+    response.set_cookie(
+        key='access_token',
+        value=access_token,
+        httponly=True,
+        secure=True,
+        samesite='lax',
+        max_age=settings.ACCESS_TOKEN_EX,
+    )
+    response.set_cookie(
+        key='refresh_token',
+        value=refresh_token,
+        httponly=True,
+        secure=True,
+        samesite='lax',
+        max_age=settings.REFRESH_TOKEN_EX,
+        path="/api/auth/refresh",
     )
     return response
 
