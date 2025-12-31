@@ -18,18 +18,20 @@ BASE_PATH = Path(__file__).parent
 STATIC_DIR = BASE_PATH / 'static'
 
 app = FastAPI(
-    docs_url='/api/docs',
-    openapi_url='/api/openapi.json',
+    docs_url='/docs',
+    openapi_url='/openapi.json',
+    root_path='/api',
+    version='1.0.0',
 )
 setup_tracing(app)
 app.add_middleware(TracingMiddleware)
 
-app.include_router(auth_router, prefix='/api')
-app.include_router(user_router, prefix='/api')
-app.include_router(notification_router, prefix='/api')
-app.include_router(app_setting_router, prefix='/api')
-app.include_router(role_access_control_router, prefix='/api')
-app.include_router(template_router, prefix='/api')
+app.include_router(auth_router)
+app.include_router(user_router)
+app.include_router(notification_router)
+app.include_router(app_setting_router)
+app.include_router(role_access_control_router)
+app.include_router(template_router)
 
 app.mount('/api/static', StaticFiles(directory=STATIC_DIR), name='static')
 
