@@ -1,18 +1,12 @@
-import secrets
-from enum import Enum
 from typing import Annotated
 
 import bcrypt
 from constants import ApplicationSettings, VerificationMethod
 from database import get_async_db
-from database.models.application_setting import ApplicationSetting
-from database.models.role_access_control import RoleAccessControl
-from database.models.template import Template
 from database.models.user import User
-from fastapi import APIRouter, Cookie, Depends, Header, HTTPException, Request, Response, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi.security import OAuth2PasswordRequestForm
 from itsdangerous import URLSafeTimedSerializer
-from passlib.context import CryptContext
 from pydantic import BaseModel
 from rq import Queue
 from settings import settings
@@ -22,14 +16,11 @@ from worker.queue import get_email_queue, get_notification_queue
 from worker.tasks.email import send_email
 from worker.tasks.notification import notify_role, notify_user
 
-from .utils.crudutils import ActionResponse, make_crud_schemas
+from ..utils.crudutils import ActionResponse, make_crud_schemas
+from .core import authenticate_user, create_access_token, get_authenticated_user, get_setting, get_template
 
 
-router = APIRouter()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/api/auth/login', auto_error=False)
-pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
-ACCESS_TOKEN_EXPIRATION = 3600
-TAGS: list[str | Enum] = ['Authentication']
+router = APIRouter(tags=['Authentication (Native)'])
 
 CreateSchema, UpdateSchema, ResponseSchema, ListResponseSchema = make_crud_schemas(User)
 
@@ -65,164 +56,7 @@ class UpdatePasswordForm(BaseModel):
     confirm_password: str
 
 
-async def can_access(db: AsyncSession, resource: str, action: str, role: str):
-    auth_resources = ['auth.*']
-    q = select(RoleAccessControl).where(RoleAccessControl.role == role)
-    q_result = await db.exec(q)
-    result = q_result.first()
-    
-    if not result:
-        return False
-    
-    permissions = result.permissions + auth_resources
-    # Permission format: <resource>.<action>
-    for permission in permissions:
-        if permission == '*':
-            return True
-
-        p_resource = permission.split('.')[0]
-        p_action = permission.split('.')[1]
-
-        if p_resource in [resource, '*'] and p_action in [action, '*']:
-            return True
-    
-    return False
-
-
-async def get_current_user(
-    request: Request,
-    db: Annotated[AsyncSession, Depends(get_async_db)],
-    api_key: Annotated[str | None, Header()] = None,
-    access_token: Annotated[str | None, Cookie()] = None,
-):
-    user = None
-    if api_key:
-        try:
-            user =  await get_user_by_api_key(db, api_key)
-        except HTTPException as e:
-            print(f'API Key authentication failed: {str(e)}')
-            pass
-
-    if access_token:
-        try:
-            user = await get_user_by_jwt_token(db, access_token)
-        except HTTPException as e:
-            print(f'Token authentication failed: {str(e)}')
-            pass
-
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='Authentication required'
-        )
-    
-    if not user.verified:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='User not verified'
-        )
-
-    return user
-
-
-async def get_user_by_api_key(
-    db: AsyncSession,
-    api_key: Annotated[str | None, Header()] = None
-):
-    if api_key is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='API key missing'
-        )
-    result = await db.exec(select(User).where(User.api == api_key))
-    user = result.first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='Invalid API key'
-        )
-    return user
-
-
-async def get_user_by_jwt_token(
-    db: AsyncSession,
-    token: Annotated[str, Depends(oauth2_scheme)] = ''
-):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail='Could not validate credentials',
-        headers={'WWW-Authenticate': 'Bearer'},
-    )
-    try:
-        serializer = URLSafeTimedSerializer(settings.SECRET_KEY)
-        payload = serializer.loads(token, max_age=settings.ACCESS_TOKEN_EX, salt='user-auth')
-        username: str = payload.get('sub')
-        if username is None:
-            raise credentials_exception
-    except Exception as ex:
-        raise credentials_exception from ex
-    result = await db.exec(select(User).where(User.email == username))
-    user = result.first()
-    if user is None:
-        raise credentials_exception
-    return user
-
-
-async def authenticate_user(username: str, password: str, db: AsyncSession):
-    query = select(User).where(User.email == username)
-    result = await db.exec(query)
-    user = result.first()
-    if not user:
-        return None
-    if not pwd_context.verify(password, user.password):
-        return None
-    return user
-
-
-def get_authenticated_user(resource: str, action: str):
-    async def dependency(
-        db: Annotated[AsyncSession, Depends(get_async_db)],
-        current_user: Annotated[User, Depends(get_current_user)],
-    ) -> User:
-        if not await can_access(db, resource, action, current_user.role):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"No access to {resource}.{action}",
-            )
-        return current_user
-
-    return Depends(dependency)
-
-
-def create_access_token(data: dict, salt: str | bytes | None = None):
-    serializer = URLSafeTimedSerializer(settings.SECRET_KEY)
-    token = serializer.dumps(data, salt)
-    return token
-
-
-async def get_setting(db: AsyncSession, name: str):
-    result = await db.exec(
-        select(ApplicationSetting)
-        .where(ApplicationSetting.name == name)
-    )
-    setting = result.first()
-    if not setting:
-        raise Exception('User verification setting not found. Perhaps you forgot to run migration?')
-    return setting.value
-
-
-async def get_template(db: AsyncSession, name: str):
-    result = await db.exec(
-        select(Template)
-        .where(Template.name == name)
-    )
-    template = result.first()
-    if not template:
-        raise Exception('Email template path setting not found. Perhaps you forgot to run migration?')
-    return template.path
-
-
-@router.post('/auth/register', tags=TAGS)
+@router.post('/register')
 async def register_user(
     response: Response,
     data: RegisterForm,
@@ -279,7 +113,7 @@ async def register_user(
         verification_token = create_access_token(data={'sub': data.email}, salt='user-verification')
         base_url = await get_setting(db, ApplicationSettings.BASE_URL)
         template_path = await get_template(db, 'email_verification')
-        verification_url = f'{base_url}/api/auth/verify_email?token={verification_token}'
+        verification_url = f'{base_url}/api/verify_email?token={verification_token}'
         new_data = {
             'name': new_user.name,
             'verification_url': verification_url
@@ -312,17 +146,17 @@ async def register_user(
         secure=True,
         samesite='lax',
         max_age=settings.REFRESH_TOKEN_EX,
-        path="/api/auth/refresh",
+        path="/api/refresh",
     )
     return response
 
 
-@router.post('/auth/login', tags=TAGS)
+@router.post('/login')
 async def login_user(
     response: Response,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Annotated[AsyncSession, Depends(get_async_db)],
-) -> Response:
+):
     user = await authenticate_user(form_data.username, form_data.password, db)
     if not user:
         raise HTTPException(status_code=401, detail='User not found')
@@ -348,71 +182,18 @@ async def login_user(
         secure=True,
         samesite='lax',
         max_age=settings.REFRESH_TOKEN_EX,
-        path="/api/auth/refresh",
-    )
-    return response
-
-
-@router.post('/auth/refresh', tags=TAGS)
-async def refresh_token(
-    response: Response,
-    db: Annotated[AsyncSession, Depends(get_async_db)],
-    refresh_token: Annotated[str | None, Cookie()] = None,
-):
-    if not refresh_token:
-        raise HTTPException(status_code=401, detail='No refresh token provided')
-
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail='Invalid refresh token',
+        path="/api/refresh",
     )
 
-    try:
-        serializer = URLSafeTimedSerializer(settings.SECRET_KEY)
-        payload = serializer.loads(refresh_token, max_age=settings.ACCESS_TOKEN_EX, salt='user-refresh')
-        username: str = payload.get('sub')
-        if username is None:
-            raise credentials_exception
-    except Exception as ex:
-        raise credentials_exception from ex
-
-    result = await db.exec(select(User).where(User.email == username))
-    user = result.first()
-    if user is None:
-        raise credentials_exception
-
-    access_token = create_access_token(data={'sub': user.email}, salt='user-auth')
-    refresh_token = create_access_token(data={'sub': user.email}, salt='user-refresh')
-
-    response.status_code = status.HTTP_200_OK
-    response.set_cookie(
-        key='access_token',
-        value=access_token,
-        httponly=True,
-        secure=True,
-        samesite='lax',
-        max_age=settings.ACCESS_TOKEN_EX,
-    )
-    response.set_cookie(
-        key='refresh_token',
-        value=refresh_token,
-        httponly=True,
-        secure=True,
-        samesite='lax',
-        max_age=settings.REFRESH_TOKEN_EX,
-        path="/api/auth/refresh",
-    )
-    return response
+    data = {
+        'access_token': access_token,
+        'refresh_token': refresh_token,
+        'token_type': 'bearer',
+    }
+    return data
 
 
-@router.post('/auth/logout', tags=TAGS)
-async def logout_user(response: Response,):
-    response.status_code = status.HTTP_200_OK
-    response.delete_cookie(key='access_token')
-    return response
-
-
-@router.post('/auth/forgot_password', response_model=ActionResponse, tags=TAGS)
+@router.post('/forgot_password', response_model=ActionResponse)
 async def forgot_password(
     data: ResetPasswordRequestForm,
     db: Annotated[AsyncSession, Depends(get_async_db)],
@@ -447,7 +228,7 @@ async def forgot_password(
     return response
 
 
-@router.post('/auth/reset_password', response_model=ActionResponse, tags=TAGS)
+@router.post('/reset_password', response_model=ActionResponse)
 async def reset_password(
     token: str,
     data: ResetPasswordForm,
@@ -483,7 +264,7 @@ async def reset_password(
     return ActionResponse(success=True, message='Password successfully changed')
 
 
-@router.get('/auth/verify_email', response_model=ActionResponse, tags=TAGS)
+@router.get('/verify_email', response_model=ActionResponse)
 async def verify_email(
     token: str,
     db: Annotated[AsyncSession, Depends(get_async_db)],
@@ -514,7 +295,7 @@ async def verify_email(
     return ActionResponse(success=True, message='Email successfully verified')
 
 
-@router.post('/auth/update_password', response_model=ActionResponse, tags=TAGS)
+@router.post('/update_password', response_model=ActionResponse)
 async def update_password(
     current_user: Annotated[User, get_authenticated_user('auth', 'update_password')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
@@ -532,30 +313,3 @@ async def update_password(
     db.add(user)
     await db.commit()
     return ActionResponse(success=True, message='Password successfully changed')
-
-
-@router.get('/auth/me', response_model=UserAuthSchema, tags=TAGS)
-async def me(
-    current_user: Annotated[User, get_authenticated_user('auth', 'me')],
-    db: Annotated[AsyncSession, Depends(get_async_db)],
-):
-    permissions = []
-    q = select(RoleAccessControl).where(RoleAccessControl.role == current_user.role)
-    if rbac := (await db.exec(q)).first():
-        permissions = rbac.permissions or []
-
-    return UserAuthSchema(**current_user.model_dump(), permissions=permissions)
-
-
-@router.post('/auth/generate_api_key', tags=TAGS)
-async def generate_api_key(
-    current_user: Annotated[User, get_authenticated_user('auth', 'generate_api_key')],
-    db: Annotated[AsyncSession, Depends(get_async_db)],
-):
-    api_key = secrets.token_urlsafe(32)
-    current_user.api = api_key
-    current_user.verified = True
-    db.add(current_user)
-    await db.commit()
-    await db.refresh(current_user)
-    return current_user

@@ -7,7 +7,7 @@ from database.models.user import User
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from .auth import get_authenticated_user
+from .auth.core import get_authenticated_user
 from .utils import queryutil
 from .utils.crudutils import ActionResponse, make_crud_schemas
 from .utils.queryutil import GetListParams, get_list_params
