@@ -2,7 +2,7 @@ name: "{{ app_name }}"
 
 x-custom:
   python-env: &python-env
-    PYTHONPATH: /workspace:/workspace/app
+    PYTHONPATH: /workspace:/workspace/app:/workspace/api
     PYTHONDONTWRITEBYTECODE: 1
     PYTHONUNBUFFERED: 1
   mysql-env: &mysql-env
@@ -55,6 +55,7 @@ services:
       - ${MYSQL_PORT}:3306
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./provision/mysql:/docker-entrypoint-initdb.d
     networks:
       - app_network
 
