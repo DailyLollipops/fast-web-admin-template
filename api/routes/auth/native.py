@@ -7,6 +7,7 @@ from database.models.user import User
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 from itsdangerous import URLSafeTimedSerializer
+from passlib.context import CryptContext
 from pydantic import BaseModel
 from rq import Queue
 from settings import settings
@@ -17,10 +18,11 @@ from worker.tasks.email import send_email
 from worker.tasks.notification import notify_role, notify_user
 
 from ..utils.crudutils import ActionResponse, make_crud_schemas
-from .core import authenticate_user, create_access_token, get_authenticated_user, get_setting, get_template
+from .core import create_access_token, get_authenticated_user, get_setting, get_template
 
 
 router = APIRouter(tags=['Authentication (Native)'])
+pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 
 CreateSchema, UpdateSchema, ResponseSchema, ListResponseSchema = make_crud_schemas(User)
 
@@ -56,6 +58,17 @@ class UpdatePasswordForm(BaseModel):
     confirm_password: str
 
 
+async def authenticate_user(username: str, password: str, db: AsyncSession):
+    query = select(User).where(User.email == username)
+    result = await db.exec(query)
+    user = result.first()
+    if not user:
+        return None
+    if not pwd_context.verify(password, user.password):
+        return None
+    return user
+
+
 @router.post('/register')
 async def register_user(
     response: Response,
@@ -84,6 +97,7 @@ async def register_user(
     new_user = User(
         name=data.name,
         email=data.email,
+        provider='native',
         password=hashed_password,
         verified=True if verification_method == VerificationMethod.NONE else False
     )

@@ -8,14 +8,12 @@ from database.models.user import User
 from fastapi import Cookie, Depends, Header, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from itsdangerous import URLSafeTimedSerializer
-from passlib.context import CryptContext
 from settings import settings
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/api/auth/login', auto_error=False)
-pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 ACCESS_TOKEN_EXPIRATION = 3600
 
 
@@ -116,17 +114,6 @@ async def get_user_by_jwt_token(db: AsyncSession, token: str):
     user = result.first()
     if user is None:
         raise credentials_exception
-    return user
-
-
-async def authenticate_user(username: str, password: str, db: AsyncSession):
-    query = select(User).where(User.email == username)
-    result = await db.exec(query)
-    user = result.first()
-    if not user:
-        return None
-    if not pwd_context.verify(password, user.password):
-        return None
     return user
 
 

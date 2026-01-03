@@ -61,6 +61,7 @@ def main():
         email=email,
         password=hashed_password,
         role='system',
+        provider='native',
         verified=True,
     )
 

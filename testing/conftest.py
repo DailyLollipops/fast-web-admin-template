@@ -43,6 +43,7 @@ def session_setup_and_teardown():
                 new_user = User(
                     name=user['name'],
                     email=user['email'],
+                    provider='native',
                     password=bcrypt.hashpw(user['password'].encode('utf-8'), bcrypt.gensalt()).decode('utf-8'),
                     role=role,
                     verified=True
