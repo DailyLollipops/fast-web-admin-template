@@ -3,17 +3,17 @@
 from enum import Enum
 from typing import Annotated
 
-from database import get_async_db
-from database.models.notification import Notification
-from database.models.user import User
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel.sql.expression import SelectOfScalar
 
-from .auth import get_authenticated_user
-from .utils import queryutil
-from .utils.crudutils import ActionResponse, make_crud_schemas
-from .utils.queryutil import GetListParams, get_list_params
+from api.database import get_async_db
+from api.database.models.notification import Notification
+from api.database.models.user import User
+from api.routes.auth import get_authenticated_user
+from api.routes.utils import queryutil
+from api.routes.utils.crudutils import ActionResponse, make_crud_schemas
+from api.routes.utils.queryutil import GetListParams, get_list_params
 
 
 router = APIRouter()

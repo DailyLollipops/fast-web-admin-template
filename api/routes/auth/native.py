@@ -2,20 +2,21 @@ from typing import Annotated
 
 import bcrypt
 from constants import ApplicationSettings, VerificationMethod
-from database import get_async_db
-from database.models.user import User
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 from itsdangerous import URLSafeTimedSerializer
 from passlib.context import CryptContext
 from pydantic import BaseModel
 from rq import Queue
-from settings import settings
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
-from worker.queue import get_email_queue, get_notification_queue
-from worker.tasks.email import send_email
-from worker.tasks.notification import notify_role, notify_user
+
+from api.database import get_async_db
+from api.database.models.user import User
+from api.settings import settings
+from api.worker.queue import get_email_queue, get_notification_queue
+from api.worker.tasks.email import send_email
+from api.worker.tasks.notification import notify_role, notify_user
 
 from ..utils.crudutils import ActionResponse, make_crud_schemas
 from .core import create_access_token, get_authenticated_user, get_setting, get_template

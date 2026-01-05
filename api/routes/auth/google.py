@@ -1,20 +1,20 @@
 from typing import Annotated
 
 from authlib.integrations.starlette_client import OAuth
-from database import get_async_db
-from database.models.user import User
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 from itsdangerous import URLSafeTimedSerializer
 from pydantic import BaseModel
 from rq import Queue
-from settings import settings
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 from worker.queue import get_notification_queue
 from worker.tasks.notification import notify_role, notify_user
 
-from .core import create_access_token
+from api.database import get_async_db
+from api.database.models.user import User
+from api.routes.auth.core import create_access_token
+from api.settings import settings
 
 
 router = APIRouter(tags=['Authentication (Google)'])

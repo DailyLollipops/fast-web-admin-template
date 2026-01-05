@@ -1,11 +1,12 @@
 import asyncio
 
-from constants import ApplicationSettings
-from database import get_sync_session
-from database.models.application_setting import ApplicationSetting
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 from jinja2 import Template
 from sqlmodel import Session, select
+
+from api.constants import ApplicationSettings
+from api.database import get_sync_session
+from api.database.models.application_setting import ApplicationSetting
 
 
 def get_smtp_config(db: Session):
@@ -24,7 +25,7 @@ def get_smtp_config(db: Session):
     smtp_password = get_setting_value(ApplicationSettings.SMTP_PASSWORD)
     config = ConnectionConfig(
         MAIL_USERNAME=smtp_username,
-        MAIL_PASSWORD=smtp_password,
+        MAIL_PASSWORD=smtp_password, # type: ignore
         MAIL_FROM=smtp_username,
         MAIL_PORT=int(smtp_port),
         MAIL_SERVER=smtp_server,

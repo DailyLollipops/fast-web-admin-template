@@ -14,8 +14,9 @@ import re
 from getpass import getpass
 
 import bcrypt
-from database import get_sync_session
-from database.models.user import User
+
+from api.database import get_sync_session
+from api.database.models.user import User
 
 
 def is_valid_email(email: str) -> bool:

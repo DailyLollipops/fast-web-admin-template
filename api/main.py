@@ -5,15 +5,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from middlewares.tracing import TracingMiddleware
-from routes.application_setting import router as app_setting_router
-from routes.auth import router as auth_router
-from routes.notification import router as notification_router
-from routes.role_access_control import router as role_access_control_router
-from routes.template import router as template_router
-from routes.user import router as user_router
-from settings import settings
 from starlette.middleware.sessions import SessionMiddleware
-from tracing import setup_tracing
+
+from api.routes.application_setting import router as app_setting_router
+from api.routes.auth import router as auth_router
+from api.routes.notification import router as notification_router
+from api.routes.role_access_control import router as role_access_control_router
+from api.routes.template import router as template_router
+from api.routes.user import router as user_router
+from api.settings import settings
+from api.tracing import setup_tracing
 
 
 BASE_PATH = Path(__file__).parent

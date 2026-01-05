@@ -2,19 +2,19 @@ import secrets
 from enum import Enum
 from typing import Annotated
 
-from database import get_async_db
-from database.models.role_access_control import RoleAccessControl
-from database.models.user import User
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
 from itsdangerous import URLSafeTimedSerializer
-from settings import settings
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from ..utils.crudutils import make_crud_schemas
-from .core import can_access, create_access_token, get_authenticated_user
-from .google import router as google_router
-from .native import router as native_router
+from api.database import get_async_db
+from api.database.models.role_access_control import RoleAccessControl
+from api.database.models.user import User
+from api.routes.auth.core import can_access, create_access_token, get_authenticated_user
+from api.routes.auth.google import router as google_router
+from api.routes.auth.native import router as native_router
+from api.routes.utils.crudutils import make_crud_schemas
+from api.settings import settings
 
 
 TAGS: list[str | Enum] = ['Authentication (Common)']

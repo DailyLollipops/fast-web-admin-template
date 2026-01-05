@@ -9,9 +9,10 @@
 import re
 
 import click
-from database import factory
-from database.engine import get_sync_session
 from sqlmodel import select
+
+from api.database import factory
+from api.database.engine import get_sync_session
 
 
 def snake_to_pascal(s: str) -> str:

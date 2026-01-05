@@ -1,6 +1,7 @@
 from redis import Redis
 from rq import Queue
-from settings import settings
+
+from api.settings import settings
 
 
 def get_notification_queue():

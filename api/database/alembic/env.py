@@ -2,9 +2,10 @@ import os
 from logging.config import fileConfig
 
 from alembic import context
-from database.models import *  # noqa: F403
 from sqlalchemy import engine_from_config, pool
 from sqlmodel import SQLModel
+
+from api.database.models import *  # noqa: F403
 
 
 config = context.config

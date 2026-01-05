@@ -1,9 +1,10 @@
 from constants import ApplicationSettings
-from database import get_sync_session
-from database.models.application_setting import ApplicationSetting
-from database.models.notification import Notification
-from database.models.user import User
 from sqlmodel import insert, literal, select
+
+from api.database import get_sync_session
+from api.database.models.application_setting import ApplicationSetting
+from api.database.models.notification import Notification
+from api.database.models.user import User
 
 
 def notify_user(
