@@ -2,6 +2,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
@@ -18,11 +19,16 @@ from api.settings import settings
 
 BASE_PATH = Path(__file__).parent
 STATIC_DIR = BASE_PATH / 'static'
+ROOT_API_PATH = '/api'
+FAVICON_URL = f'{ROOT_API_PATH}/static/brand.png'
 
 app = FastAPI(
-    docs_url='/docs',
+    title=settings.APP_NAME.title(),
+    description=f'API documentation for {settings.APP_NAME.title()}',
+    docs_url=f'{ROOT_API_PATH}/docs',
+    redoc_url=f'{ROOT_API_PATH}/redoc',
     openapi_url='/openapi.json',
-    root_path='/api',
+    root_path=ROOT_API_PATH,
     version='1.0.0',
 )
 setup_tracing(app)
@@ -36,7 +42,7 @@ app.include_router(app_setting_router)
 app.include_router(role_access_control_router)
 app.include_router(template_router)
 
-app.mount('/api/static', StaticFiles(directory=STATIC_DIR), name='static')
+app.mount('/static', StaticFiles(directory=STATIC_DIR), name='static')
 
 app.add_middleware(
     CORSMiddleware,
@@ -57,4 +63,33 @@ async def global_exception_handler(request: Request, exc: Exception):
             'X-Trace-ID': trace_id,
             'X-Elapsed-Time': f'{elapsed_ms:.2f}ms',
         },
+    )
+
+
+@app.get('/docs', include_in_schema=False)
+async def swagger_ui_docs(request: Request):
+    root_path = request.scope.get('root_path', '').rstrip('/')
+    openapi_url = root_path + app.openapi_url
+    oauth2_redirect_url = app.swagger_ui_oauth2_redirect_url
+    if oauth2_redirect_url:
+        oauth2_redirect_url = root_path + oauth2_redirect_url
+
+    return get_swagger_ui_html(
+        openapi_url=openapi_url,
+        title=f'{app.title} - Swagger UI',
+        oauth2_redirect_url=oauth2_redirect_url,
+        init_oauth=app.swagger_ui_init_oauth,
+        swagger_favicon_url=FAVICON_URL,
+        swagger_ui_parameters=app.swagger_ui_parameters,
+    )
+
+
+@app.get('/redoc', include_in_schema=False)
+async def redoc_docs(request: Request):
+    root_path = request.scope.get('root_path', '').rstrip('/')
+    openapi_url = root_path + app.openapi_url
+
+    return get_redoc_html(
+        openapi_url=openapi_url, title=f'{app.title} - ReDoc',
+        redoc_favicon_url=FAVICON_URL
     )
