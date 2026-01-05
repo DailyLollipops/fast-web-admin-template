@@ -11,7 +11,13 @@ const refreshToken = async () => {
 };
 
 export const authProvider: AuthProvider = {
-  login: async ({ username, password }) => {
+  login: async (params) => {
+    if (params?.provider === "google") {
+      window.location.href = `${API_URL}/auth/google/login`;
+      return Promise.resolve();
+    }
+
+    const { username, password } = params;
     const formData = new URLSearchParams();
     formData.append("username", username);
     formData.append("password", password);

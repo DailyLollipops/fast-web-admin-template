@@ -7,13 +7,15 @@ import {
   Button,
   Checkbox,
   Container,
+  Divider,
   FormControlLabel,
   Link,
   Paper,
   TextField,
   Typography,
 } from "@mui/material";
-import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import { LockOutline } from "@mui/icons-material";
+import { GoogleSignInButton } from "@/components";
 
 export const LoginPage = () => {
   const login = useLogin();
@@ -43,7 +45,7 @@ export const LoginPage = () => {
         <Paper elevation={4} sx={{ p: 6, borderRadius: 3 }}>
           <Box display="flex" flexDirection="column" alignItems="center">
             <Avatar sx={{ bgcolor: "primary.main", mb: 2 }}>
-              <LockOutlinedIcon />
+              <LockOutline />
             </Avatar>
             <Typography variant="h5" gutterBottom>
               Application Login
@@ -111,6 +113,16 @@ export const LoginPage = () => {
               >
                 Login
               </Button>
+
+              <Divider sx={{ my: 2 }}>OR</Divider>
+              <GoogleSignInButton
+                onClick={() => {
+                  login({
+                    provider: "google",
+                    returnTo: "/",
+                  });
+                }}
+              />
 
               <Typography
                 variant="body2"

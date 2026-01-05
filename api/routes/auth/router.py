@@ -13,6 +13,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from ..utils.crudutils import make_crud_schemas
 from .core import create_access_token, get_authenticated_user
+from .google import router as google_router
 from .native import router as native_router
 
 
@@ -20,6 +21,7 @@ TAGS: list[str | Enum] = ['Authentication (Common)']
 
 router = APIRouter()
 router.include_router(native_router, prefix='/auth')
+router.include_router(google_router, prefix='/auth/google')
 
 CreateSchema, UpdateSchema, ResponseSchema, ListResponseSchema = make_crud_schemas(User)
 

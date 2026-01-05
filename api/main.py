@@ -11,6 +11,8 @@ from routes.notification import router as notification_router
 from routes.role_access_control import router as role_access_control_router
 from routes.template import router as template_router
 from routes.user import router as user_router
+from settings import settings
+from starlette.middleware.sessions import SessionMiddleware
 from tracing import setup_tracing
 
 
@@ -25,6 +27,7 @@ app = FastAPI(
 )
 setup_tracing(app)
 app.add_middleware(TracingMiddleware)
+app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
 
 app.include_router(auth_router)
 app.include_router(user_router)

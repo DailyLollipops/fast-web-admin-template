@@ -22,4 +22,7 @@ class Settings(BaseSettings):
 
     PROFILE_DIRECTORY: str = 'static/profiles'
 
+    GOOGLE_OAUTH_CLIENT_ID: str = ''
+    GOOGLE_OAUTH_CLIENT_SECRET: str = ''
+
 settings = Settings() # type: ignore
