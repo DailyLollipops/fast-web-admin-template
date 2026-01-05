@@ -18,7 +18,14 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/api/auth/login', auto_error=Fals
 ACCESS_TOKEN_EXPIRATION = 3600
 
 
-async def can_access(db: AsyncSession, resource: str, action: str, role: str):
+async def can_access(
+    db: AsyncSession,
+    required_permission: str | None = None,
+    role: str | None = None,
+) -> bool:
+    if required_permission is None or role is None:
+        return True
+
     auth_resources = ['auth.*']
     q = select(RoleAccessControl).where(RoleAccessControl.role == role)
     q_result = await db.exec(q)
@@ -27,19 +34,17 @@ async def can_access(db: AsyncSession, resource: str, action: str, role: str):
     if not result:
         return False
     
+    resource = required_permission.rsplit('.', maxsplit=1)[0]
     permissions = result.permissions + auth_resources
+
     # Permission format: <resource>.<action>
-    for permission in permissions:
-        if permission == '*':
-            return True
+    if '*' in permissions:
+        return True
 
-        p_resource = permission.split('.')[0]
-        p_action = permission.split('.')[1]
+    if f'{resource}.*' in permissions:
+        return True
 
-        if p_resource in [resource, '*'] and p_action in [action, '*']:
-            return True
-    
-    return False
+    return required_permission in permissions
 
 
 async def get_current_user(
@@ -118,16 +123,16 @@ async def get_user_by_jwt_token(db: AsyncSession, token: str):
     return user
 
 
-def get_authenticated_user(resource: str, action: str):
+def get_authenticated_user(required_permission: str):
     async def dependency(
         db: Annotated[AsyncSession, Depends(get_async_db)],
         current_user: Annotated[User, Depends(get_current_user)],
         scheme: Annotated[str | None, Depends(oauth2_scheme)] = None,
     ) -> User:
-        if not await can_access(db, resource, action, current_user.role):
+        if not await can_access(db, required_permission, current_user.role):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"No access to {resource}.{action}",
+                detail=f"No access to {required_permission}",
             )
         return current_user
 

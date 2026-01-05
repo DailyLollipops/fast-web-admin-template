@@ -27,7 +27,7 @@ RoleAccessControlUpdate = UpdateSchema
 @router.post('/role_access_controls', response_model=ResponseSchema, tags=TAGS)
 async def create_role_access_control(
     data: RoleAccessControlCreate,
-	current_user: Annotated[User, get_authenticated_user('role_access_controls', 'create')],
+	current_user: Annotated[User, get_authenticated_user('role_access_controls.create')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
 ):
     try:
@@ -45,7 +45,7 @@ async def create_role_access_control(
 
 @router.get('/role_access_controls', response_model=ListResponseSchema, tags=['RoleAccessControl'])
 async def get_role_access_controls(
-	current_user: Annotated[User, get_authenticated_user('role_access_controls', 'read')],
+	current_user: Annotated[User, get_authenticated_user('role_access_controls.read')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
     params: Annotated[GetListParams, Depends(get_list_params)],
 ):
@@ -64,7 +64,7 @@ async def get_role_access_controls(
 
 @router.get('/role_access_controls/{id}', response_model=ResponseSchema, tags=['RoleAccessControl'])
 async def get_role_access_control(
-	current_user: Annotated[User, get_authenticated_user('role_access_controls', 'read')],
+	current_user: Annotated[User, get_authenticated_user('role_access_controls.read')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
     id: int,
 ):
@@ -82,7 +82,7 @@ async def get_role_access_control(
 
 @router.patch('/role_access_controls/{id}', response_model=ResponseSchema, tags=['RoleAccessControl'])
 async def update_role_access_control(
-	current_user: Annotated[User, get_authenticated_user('role_access_controls', 'update')],
+	current_user: Annotated[User, get_authenticated_user('role_access_controls.update')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
     id: int,
     data: RoleAccessControlUpdate,
@@ -106,7 +106,7 @@ async def update_role_access_control(
 
 @router.delete('/role_access_controls/{id}', response_model=ActionResponse, tags=['RoleAccessControl'])
 async def delete_role_access_control(
-	current_user: Annotated[User, get_authenticated_user('role_access_controls', 'delete')],
+	current_user: Annotated[User, get_authenticated_user('role_access_controls.delete')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
     id: int,
 ):

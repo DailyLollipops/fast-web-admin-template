@@ -40,7 +40,7 @@ def get_template_content(template: Template) -> str:
 
 @router.post('/templates', response_model=ResponseSchema, tags=TAGS)
 async def create_template(
-	current_user: Annotated[User, get_authenticated_user('templates', 'create')],
+	current_user: Annotated[User, get_authenticated_user('templates.create')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
     data: TemplateCreate,
 ):
@@ -67,7 +67,7 @@ async def create_template(
 
 @router.get('/templates', response_model=ListResponseSchema, tags=TAGS)
 async def get_templates(
-	current_user: Annotated[User, get_authenticated_user('templates', 'read')],
+	current_user: Annotated[User, get_authenticated_user('templates.read')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
     params: Annotated[GetListParams, Depends(get_list_params)],
 ):
@@ -86,7 +86,7 @@ async def get_templates(
 
 @router.get('/templates/{id}', response_model=ResponseSchema, tags=TAGS)
 async def get_template(
-	current_user: Annotated[User, get_authenticated_user('templates', 'read')],
+	current_user: Annotated[User, get_authenticated_user('templates.read')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
     id: int,
 ):
@@ -104,7 +104,7 @@ async def get_template(
 
 @router.patch('/templates/{id}', response_model=ResponseSchema, tags=TAGS)
 async def update_template(
-	current_user: Annotated[User, get_authenticated_user('templates', 'update')],
+	current_user: Annotated[User, get_authenticated_user('templates.update')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
     id: int,
     data: TemplateUpdate,
@@ -135,7 +135,7 @@ async def update_template(
 
 @router.delete('/templates/{id}', response_model=ActionResponse, tags=TAGS)
 async def delete_template(
-	current_user: Annotated[User, get_authenticated_user('templates', 'delete')],
+	current_user: Annotated[User, get_authenticated_user('templates.delete')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
     id: int,
 ):

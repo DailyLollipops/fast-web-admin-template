@@ -28,7 +28,7 @@ ApplicationSettingUpdate = UpdateSchema
 
 @router.post('/application_settings', response_model=ResponseSchema, tags=TAGS)
 async def create_application_setting(
-	current_user: Annotated[User, get_authenticated_user('application_settings', 'create')],
+	current_user: Annotated[User, get_authenticated_user('application_settings.create')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
     data: ApplicationSettingCreate,
 ):
@@ -51,7 +51,7 @@ async def create_application_setting(
 
 @router.get('/application_settings', response_model=ListResponseSchema, tags=TAGS)
 async def get_application_settings(
-	current_user: Annotated[User, get_authenticated_user('application_settings', 'read')],
+	current_user: Annotated[User, get_authenticated_user('application_settings.read')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
     params: Annotated[GetListParams, Depends(get_list_params)],
 ):
@@ -70,7 +70,7 @@ async def get_application_settings(
 
 @router.get('/application_settings/{id}', response_model=ResponseSchema, tags=TAGS)
 async def get_application_setting(
-	current_user: Annotated[User, get_authenticated_user('application_settings', 'read')],
+	current_user: Annotated[User, get_authenticated_user('application_settings.read')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
     id: int,
 ):
@@ -88,7 +88,7 @@ async def get_application_setting(
 
 @router.patch('/application_settings/{id}', response_model=ResponseSchema, tags=TAGS)
 async def update_application_setting(
-	current_user: Annotated[User, get_authenticated_user('application_settings', 'update')],
+	current_user: Annotated[User, get_authenticated_user('application_settings.update')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
     id: int,
     data: ApplicationSettingUpdate,
@@ -113,7 +113,7 @@ async def update_application_setting(
 
 @router.delete('/application_settings/{id}', response_model=ActionResponse, tags=TAGS)
 async def delete_application_setting(
-	current_user: Annotated[User, get_authenticated_user('application_settings', 'delete')],
+	current_user: Annotated[User, get_authenticated_user('application_settings.delete')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
     id: int,
 ):

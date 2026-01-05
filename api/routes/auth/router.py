@@ -91,7 +91,7 @@ async def logout_user(response: Response,):
 
 @router.get('/auth/me', response_model=UserAuthSchema, tags=TAGS)
 async def me(
-    current_user: Annotated[User, get_authenticated_user('auth', 'me')],
+    current_user: Annotated[User, get_authenticated_user('auth.me')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
 ):
     permissions = []
@@ -106,16 +106,17 @@ async def me(
 async def check_auth(
     resource: str,
     action: str,
-    current_user: Annotated[User, get_authenticated_user('auth', 'check')],
+    current_user: Annotated[User, get_authenticated_user('auth.check')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
 ):
-    has_access = await can_access(db, resource, action, current_user.role)
+    permission = f'{resource}.{action}'
+    has_access = await can_access(db, permission, current_user.role)
     return {'access': has_access}
 
 
 @router.post('/auth/generate_api_key', tags=TAGS)
 async def generate_api_key(
-    current_user: Annotated[User, get_authenticated_user('auth', 'generate_api_key')],
+    current_user: Annotated[User, get_authenticated_user('auth.generate_api_key')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
 ):
     api_key = secrets.token_urlsafe(32)

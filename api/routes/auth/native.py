@@ -312,7 +312,7 @@ async def verify_email(
 
 @router.post('/update_password', response_model=ActionResponse)
 async def update_password(
-    current_user: Annotated[User, get_authenticated_user('auth', 'update_password')],
+    current_user: Annotated[User, get_authenticated_user('auth.update_password')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
     data: UpdatePasswordForm,
 ):

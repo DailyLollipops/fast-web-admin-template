@@ -34,7 +34,7 @@ UserUpdate = UpdateSchema
 
 @router.post('/users', response_model=ResponseSchema, tags=TAGS)
 async def create_user(
-    current_user: Annotated[User, get_authenticated_user('users', 'create')],
+    current_user: Annotated[User, get_authenticated_user('users.create')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
     data: UserCreate,
 ):
@@ -72,7 +72,7 @@ async def create_user(
 
 @router.get('/users', response_model=ListResponseSchema, tags=TAGS)
 async def get_users(
-    current_user: Annotated[User, get_authenticated_user('users', 'read')],
+    current_user: Annotated[User, get_authenticated_user('users.read')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
     params: Annotated[GetListParams, Depends(get_list_params)],
 ):
@@ -91,7 +91,7 @@ async def get_users(
 
 @router.get('/users/{id}', response_model=ResponseSchema, tags=TAGS)
 async def get_user(
-    current_user: Annotated[User, get_authenticated_user('users', 'read')],
+    current_user: Annotated[User, get_authenticated_user('users.read')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
     id: int,
 ):
@@ -109,7 +109,7 @@ async def get_user(
 
 @router.patch('/users/{id}', response_model=ResponseSchema, tags=TAGS)
 async def update_user(
-	current_user: Annotated[User, get_authenticated_user('users', 'read')],
+	current_user: Annotated[User, get_authenticated_user('users.read')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
     id: int,
     data: UserUpdate,
@@ -134,7 +134,7 @@ async def update_user(
 
 @router.delete('/users/{id}', tags=TAGS)
 async def delete_user(
-    current_user: Annotated[User, get_authenticated_user('users', 'read')],
+    current_user: Annotated[User, get_authenticated_user('users.delete')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
     id: int,
 ):
