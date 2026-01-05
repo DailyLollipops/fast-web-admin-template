@@ -125,9 +125,9 @@ services:
     build:
       target: web
     volumes:
-      - ./web:/workspace/app
-      - /workspace/app/node_modules
-      - /workspace/app/build
+      - ./web:/workspace/app/web
+      - /workspace/app/web/node_modules
+      - /workspace/app/web/build
     command: npm run dev
     depends_on:
       - dev-api

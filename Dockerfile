@@ -24,17 +24,17 @@ RUN uv sync --group worker
 
 FROM node:22-slim AS base_node
 
-WORKDIR /workspace/app
+WORKDIR /workspace/app/web
 
 FROM base_node AS web
-COPY ./web/package*.json /workspace/app/
+COPY ./web/package*.json /workspace/app/web/
 RUN npm install
 RUN npm install -D vite
 
 FROM web AS web_prod
 
-COPY ./web /workspace/app/
-COPY .env /workspace/app/.env
+COPY ./web /workspace/app/web
+COPY .env /workspace/app/web/.env
 
 RUN apt-get update && apt-get install -y xsel && rm -rf /var/lib/apt/lists/*
 RUN npm install -g serve
