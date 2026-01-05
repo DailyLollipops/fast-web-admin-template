@@ -12,7 +12,7 @@ from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from ..utils.crudutils import make_crud_schemas
-from .core import create_access_token, get_authenticated_user
+from .core import can_access, create_access_token, get_authenticated_user
 from .google import router as google_router
 from .native import router as native_router
 
@@ -100,6 +100,17 @@ async def me(
         permissions = rbac.permissions or []
 
     return UserAuthSchema(**current_user.model_dump(), permissions=permissions)
+
+
+@router.get('/auth/check', tags=TAGS)
+async def check_auth(
+    resource: str,
+    action: str,
+    current_user: Annotated[User, get_authenticated_user('auth', 'check')],
+    db: Annotated[AsyncSession, Depends(get_async_db)],
+):
+    has_access = await can_access(db, resource, action, current_user.role)
+    return {'access': has_access}
 
 
 @router.post('/auth/generate_api_key', tags=TAGS)
