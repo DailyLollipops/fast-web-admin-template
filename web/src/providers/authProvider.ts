@@ -13,8 +13,23 @@ const refreshToken = async () => {
 export const authProvider: AuthProvider = {
   login: async (params) => {
     if (params?.provider === "google") {
-      window.location.href = `${API_URL}/auth/google/login`;
-      return Promise.resolve();
+      return new Promise((resolve, reject) => {
+        const popup = window.open(
+          `${API_URL}/auth/google/login?next_url=${encodeURIComponent(window.location.origin)}`,
+          "GoogleLogin",
+          "width=500,height=600",
+        );
+        if (!popup) return reject("Popup blocked");
+        const listener = (event: MessageEvent) => {
+          if (event.origin !== window.location.origin) return;
+          if (event.data === "login-success") {
+            window.removeEventListener("message", listener);
+            resolve(true);
+          }
+        };
+
+        window.addEventListener("message", listener);
+      });
     }
 
     // Native login method

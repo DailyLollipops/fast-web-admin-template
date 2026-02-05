@@ -1,9 +1,10 @@
 from typing import Annotated
 
 from authlib.integrations.starlette_client import OAuth
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-from fastapi.responses import RedirectResponse
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import HTMLResponse
 from itsdangerous import URLSafeTimedSerializer
+from loguru import logger
 from pydantic import BaseModel
 from rq import Queue
 from sqlmodel import select
@@ -65,7 +66,8 @@ async def google_login(request: Request, next_url: str = '/'):
     return await oauth.google.authorize_redirect(  # type: ignore
         request,
         redirect_uri,
-        state=state_token
+        state=state_token,
+        prompt='select_account',
     )
 
 
@@ -77,6 +79,7 @@ async def google_callback(
     state: str = ''
 ):
     oauth_state = verify_oauth_state(state)
+    logger.debug(f'OAuth state: {oauth_state}')
     token = await oauth.google.authorize_access_token(request) # type: ignore
     user_info = token.get('userinfo')
 
@@ -119,7 +122,17 @@ async def google_callback(
 
     access_token = create_access_token(data={'sub': user.email}, salt='user-auth')
     refresh_token = create_access_token(data={'sub': user.email}, salt='user-refresh')
-    response = RedirectResponse(url=oauth_state.next_url, status_code=status.HTTP_302_FOUND)
+    response = HTMLResponse(content="""
+        <script>
+            if (window.opener) {
+                window.opener.postMessage("login-success", window.location.origin);
+                window.close();
+            } else {
+                window.location.href = "/";
+            }
+        </script>
+        """
+    )
 
     response.set_cookie(
         key='access_token',
