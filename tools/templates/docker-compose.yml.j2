@@ -72,7 +72,7 @@ services:
     build:
       target: worker
     volumes:
-      - ./api:/workspace/app
+      - ./api:/workspace/app/api
     command: uv run rq worker email notification
     depends_on:
       - mysql

@@ -5,37 +5,11 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "aiomysql>=0.2.0",
-    "alembic>=1.16.4",
-    "bcrypt>=4.3.0",
-    "click>=8.2.1",
-    "faker>=37.5.3",
-    "fastapi-mail>=1.5.0",
-    "fastapi[standard]>=0.116.1",
-    "granian>=2.5.0",
-    "itsdangerous>=2.2.0",
-    "jinja2>=3.1.6",
     "loguru>=0.7.3",
-    "mysql-connector-python>=9.4.0",
-    "nltk>=3.9.1",
-    "opentelemetry-api>=1.37.0",
-    "opentelemetry-exporter-otlp>=1.37.0",
-    "opentelemetry-instrumentation-fastapi>=0.58b0",
-    "opentelemetry-instrumentation-sqlalchemy>=0.58b0",
-    "opentelemetry-sdk>=1.37.0",
-    "passlib>=1.7.4",
-    "pillow>=11.3.0",
-    "pydantic>=2.11.7",
-    "pydantic-settings>=2.10.1",
-    "pyjwt>=2.10.1",
-    "pymysql>=1.1.1",
-    "python-jose[cryptography]>=3.5.0",
-    "pytz>=2025.2",
-    "redis>=6.3.0",
-    "requests>=2.32.4",
-    "rq>=2.5.0",
-    "sqlmodel>=0.0.24",
 ]
+
+[tool.uv]
+default-groups = []
 
 [tool.pyright]
 exclude = [
@@ -116,6 +90,11 @@ api = [
     "jinja2>=3.1.6",
     "loguru>=0.7.3",
     "mysql-connector-python>=9.4.0",
+    "opentelemetry-api>=1.37.0",
+    "opentelemetry-exporter-otlp>=1.37.0",
+    "opentelemetry-instrumentation-fastapi>=0.58b0",
+    "opentelemetry-instrumentation-sqlalchemy>=0.58b0",
+    "opentelemetry-sdk>=1.37.0",
     "passlib>=1.7.4",
     "pillow>=11.3.0",
     "pydantic>=2.11.7",
@@ -136,6 +115,7 @@ dev = [
     "pytest>=8.4.2",
     "pytest-playwright>=0.7.2",
     "ruff>=0.12.8",
+    "textblob>=0.19.0",
 ]
 worker = [
     "loguru>=0.7.3",

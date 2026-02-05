@@ -1,0 +1,4 @@
+# Frontend file
+web/build
+web/dist
+web/node_modules
