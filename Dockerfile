@@ -17,10 +17,12 @@ WORKDIR /workspace/app
 FROM base_python AS api
 
 RUN uv sync --group api
+WORKDIR /workspace/app/api
 
 FROM base_python AS worker
 
 RUN uv sync --group worker
+WORKDIR /workspace/app/api
 
 FROM node:22-slim AS base_node
 
