@@ -50,7 +50,7 @@ docker compose --profile <profile> up -d --remove-orphans
 ### 5. Run initial migration
 
 ```bash
-docker compose exec dev-api make run-migration
+docker compose exec dev-api sh -c "cd database && uv run alembic upgrade head"
 ```
 
 ### 6. Generating the system account
@@ -59,19 +59,19 @@ System accounts can manage system application settings.
 To create one:
 
 ```bash
-docker compose exec dev-api make create-superuser
+docker compose exec dev-api uv run scripts/create_superuser.py
 ```
 
 _Note: mentions on container `dev-api` refer to the dev `dev-api` container, if on production mode (e.g. `--profile prod`), use `prod-api` instead._
 
 ## 🧩 Development
 
-### Running migrations
+### Generating migrations
 
 After defining custom model in `api/models/`, generate and migrate with alembic:
 
 ```bash
-docker compose exec dev-api make create-migration MESSAGE="$message"
+docker compose exec dev-api sh -c "cd database && uv run alembic revision --autogenerate -m $MESSAGE"
 ```
 
 ### Generate API endpoint
