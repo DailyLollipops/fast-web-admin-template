@@ -12,10 +12,17 @@ const refreshToken = async () => {
 
 export const authProvider: AuthProvider = {
   login: async (params) => {
+    const remember = params?.remember || false;
+
     if (params?.provider === "google") {
       return new Promise((resolve, reject) => {
+        let loginUrl = `${API_URL}/auth/google/login?next_url=${encodeURIComponent(window.location.origin)}`;
+        if (remember) {
+          loginUrl += "&remember=true";
+        }
+
         const popup = window.open(
-          `${API_URL}/auth/google/login?next_url=${encodeURIComponent(window.location.origin)}`,
+          loginUrl,
           "GoogleLogin",
           "width=500,height=600",
         );
@@ -38,7 +45,12 @@ export const authProvider: AuthProvider = {
     formData.append("username", username);
     formData.append("password", password);
 
-    const response = await fetch(`${API_URL}/auth/login`, {
+    let loginUrl = `${API_URL}/auth/login`;
+    if (remember) {
+      loginUrl += "?remember=true";
+    }
+
+    const response = await fetch(loginUrl, {
       method: "POST",
       credentials: "include",
       headers: {

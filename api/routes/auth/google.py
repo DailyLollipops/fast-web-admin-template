@@ -40,6 +40,7 @@ class GoogleUserSchema(BaseModel):
 
 class OAuthStateSchema(BaseModel):
     next_url: str = ''
+    remember: bool = False
 
 
 def create_oauth_state_token(data: dict, salt: str | bytes | None = None):
@@ -59,9 +60,9 @@ def verify_oauth_state(state_token: str) -> OAuthStateSchema:
 
 
 @router.get('/login')
-async def google_login(request: Request, next_url: str = '/'):
+async def google_login(request: Request, next_url: str = '/', remember: bool = False):
     redirect_uri = request.url_for('google_callback')
-    state = OAuthStateSchema(next_url=next_url)
+    state = OAuthStateSchema(next_url=next_url, remember=remember)
     state_token = create_oauth_state_token(data=state.model_dump(), salt='oauth-state')
     return await oauth.google.authorize_redirect(  # type: ignore
         request,
@@ -142,13 +143,16 @@ async def google_callback(
         samesite='lax',
         max_age=settings.ACCESS_TOKEN_EX,
     )
-    response.set_cookie(
-        key='refresh_token',
-        value=refresh_token,
-        httponly=True,
-        secure=True,
-        samesite='lax',
-        max_age=settings.REFRESH_TOKEN_EX,
-        path="/api/refresh",
-    )
+
+    if oauth_state.remember:
+        response.set_cookie(
+            key='refresh_token',
+            value=refresh_token,
+            httponly=True,
+            secure=True,
+            samesite='lax',
+            max_age=settings.REFRESH_TOKEN_EX,
+            path="/api/refresh",
+        )
+
     return response

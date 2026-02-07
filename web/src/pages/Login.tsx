@@ -27,9 +27,11 @@ export const LoginPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await login({ username: email, password: password }).catch(() =>
-      notify("Invalid email or password"),
-    );
+    await login({
+      username: email,
+      password: password,
+      remember: rememberMe,
+    }).catch(() => notify("Invalid email or password"));
   };
 
   return (
@@ -120,6 +122,7 @@ export const LoginPage = () => {
                   login({
                     provider: "google",
                     returnTo: "/",
+                    remember: rememberMe,
                   });
                 }}
               />

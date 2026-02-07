@@ -170,6 +170,7 @@ async def login_user(
     response: Response,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Annotated[AsyncSession, Depends(get_async_db)],
+    remember: bool = False,
 ):
     user = await authenticate_user(form_data.username, form_data.password, db)
     if not user:
@@ -189,15 +190,17 @@ async def login_user(
         samesite='lax',
         max_age=settings.ACCESS_TOKEN_EX,
     )
-    response.set_cookie(
-        key='refresh_token',
-        value=refresh_token,
-        httponly=True,
-        secure=True,
-        samesite='lax',
-        max_age=settings.REFRESH_TOKEN_EX,
-        path="/api/refresh",
-    )
+
+    if remember:
+        response.set_cookie(
+            key='refresh_token',
+            value=refresh_token,
+            httponly=True,
+            secure=True,
+            samesite='lax',
+            max_age=settings.REFRESH_TOKEN_EX,
+            path="/api/refresh",
+        )
 
     data = {
         'access_token': access_token,

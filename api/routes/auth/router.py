@@ -86,6 +86,7 @@ async def refresh_token(
 async def logout_user(response: Response,):
     response.status_code = status.HTTP_200_OK
     response.delete_cookie(key='access_token')
+    response.delete_cookie(key='refresh_token')
     return response
 
 
