@@ -5,10 +5,10 @@ import subprocess
 from collections.abc import Callable, Generator
 from pathlib import Path
 
-import bcrypt
 import httpx
 import pytest
 from faker import Faker
+from passlib.context import CryptContext
 from playwright.sync_api import APIRequestContext, Playwright
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import sessionmaker
@@ -18,6 +18,11 @@ from api.database.models.notification import Notification
 from api.database.models.user import User
 from testing.fixtures import API_URL, BASE_URL, USERS
 
+
+pwd_context = CryptContext(
+    schemes=["argon2"],
+    deprecated="auto",
+)
 
 DATABASE_URL = os.getenv('DATABASE_URL') or ''
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -44,7 +49,7 @@ def session_setup_and_teardown():
                     name=user['name'],
                     email=user['email'],
                     provider='native',
-                    password=bcrypt.hashpw(user['password'].encode('utf-8'), bcrypt.gensalt()).decode('utf-8'),
+                    password=pwd_context.hash(user["password"]),
                     role=role,
                     verified=True
                 )

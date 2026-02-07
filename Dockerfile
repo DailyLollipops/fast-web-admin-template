@@ -49,22 +49,21 @@ FROM base_python AS testing
 
 COPY --from=base_node /usr/local /usr/local
 
-RUN apt-get update && apt-get install -y supervisor && rm -rf /var/lib/apt/lists/*
+RUN apt-get update \
+    && apt-get install -y supervisor iproute2 net-tools lsof curl \
+    && rm -rf /var/lib/apt/lists/*
 
-COPY ./provision/testing/supervisord-testing.conf /etc/supervisord.conf
-COPY ./web/package*.json /workspace/web/
-
-WORKDIR /workspace
+WORKDIR /workspace/app/api
 RUN uv sync --all-groups
-RUN uv run playwright install
+# RUN uv run playwright install
 
-WORKDIR /workspace/web
+WORKDIR /workspace/app/web
+COPY ./web/package*.json /workspace/app/web/
 RUN npm install
 RUN npm install -D vite
 
-WORKDIR /workspace/testing
+WORKDIR /workspace/app/testing
 
+COPY ./provision/testing/supervisord-testing.conf /etc/supervisord.conf
 COPY ./provision/testing/entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
-
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf", "-n"]

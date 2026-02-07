@@ -271,9 +271,9 @@ services:
     build:
       target: testing
     volumes:
-      - ./api:/workspace/api
-      - ./web:/workspace/web
-      - ./testing:/workspace/testing
+      - ./api:/workspace/app/api
+      - ./web:/workspace/app/web
+      - ./testing:/workspace/app/testing
     environment:
       <<:
         - *python-env
