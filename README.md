@@ -119,6 +119,14 @@ Options:
 
 ### Testing
 
+Start the testing container first
+
+```bash
+docker compose --profile testing up -d --remove-orphans
+```
+
+_Note: Testing environment run on a different table, so feel free to test_
+
 Run test under `testing/tests`
 
 ```bash

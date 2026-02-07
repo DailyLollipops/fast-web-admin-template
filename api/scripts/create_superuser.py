@@ -2,8 +2,8 @@
 # requires-python = ">=3.12"
 # dependencies = [
 #     "aiomysql",
-#     "bcrypt",
-#     "cryptography",
+#     "argon2-cffi",
+#     "passlib",
 #     "pydantic-settings",
 #     "pymysql",
 #     "redis",
@@ -13,11 +13,13 @@
 import re
 from getpass import getpass
 
-import bcrypt
+from passlib.context import CryptContext
 
 from api.database import get_sync_session
 from api.database.models.user import User
 
+
+pwd_context = CryptContext(schemes=['argon2'], deprecated='auto')
 
 def is_valid_email(email: str) -> bool:
     """Basic email format validation using regex."""
@@ -56,11 +58,10 @@ def main():
             print('⚠️  Account creation aborted.')
             return
 
-    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     user = User(
         name=name,
         email=email,
-        password=hashed_password,
+        password=pwd_context.hash(password),
         role='system',
         provider='native',
         verified=True,

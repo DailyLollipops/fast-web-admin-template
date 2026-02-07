@@ -3,8 +3,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Annotated
 
-import bcrypt
 from fastapi import APIRouter, Depends, HTTPException, status
+from passlib.context import CryptContext
 from sqlalchemy import or_
 from sqlmodel import delete, select
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -26,6 +26,7 @@ TAGS: list[str | Enum] = ['User']
 PROFILE_DIR = Path(__file__).resolve().parent.parent / "static" / "profiles"
 PROFILE_DIR.mkdir(parents=True, exist_ok=True)
 
+pwd_context = CryptContext(schemes=['argon2'], deprecated='auto')
 
 CreateSchema, UpdateSchema, ResponseSchema, ListResponseSchema = make_crud_schemas(User)
 UserCreate = CreateSchema
@@ -39,7 +40,7 @@ async def create_user(
     data: UserCreate,
 ):
     try:
-        data.password = bcrypt.hashpw(data.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8') # type: ignore
+        data.password = pwd_context.hash(data.password) # type: ignore
 
         if data.profile: # type: ignore
             uuid_str = str(uuid.uuid4())

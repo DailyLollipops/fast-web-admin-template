@@ -79,6 +79,7 @@ indent-style = "space"
 api = [
     "aiomysql>=0.2.0",
     "alembic>=1.16.4",
+    "argon2-cffi>=25.1.0",
     "authlib>=1.6.6",
     "bcrypt>=4.3.0",
     "click>=8.2.1",

@@ -1,6 +1,5 @@
 from typing import Annotated
 
-import bcrypt
 from constants import ApplicationSettings, VerificationMethod
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -23,7 +22,7 @@ from .core import create_access_token, get_authenticated_user, get_setting, get_
 
 
 router = APIRouter(tags=['Authentication (Native)'])
-pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
+pwd_context = CryptContext(schemes=['argon2'], deprecated='auto')
 
 CreateSchema, UpdateSchema, ResponseSchema, ListResponseSchema = make_crud_schemas(User)
 
@@ -93,7 +92,7 @@ async def register_user(
         )
 
     verification_method = await get_setting(db, ApplicationSettings.USER_VERIFICATION)
-    hashed_password = bcrypt.hashpw(data.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    hashed_password = pwd_context.hash(data.password)
 
     new_user = User(
         name=data.name,
@@ -272,7 +271,7 @@ async def reset_password(
     if user is None:
         raise credentials_exception
     
-    hashed_password = bcrypt.hashpw(data.new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    hashed_password = hashed_password = pwd_context.hash(data.new_password)
     user.password = hashed_password
     db.add(user)
     await db.commit()
@@ -322,7 +321,7 @@ async def update_password(
         raise HTTPException(status_code=401, detail='Current password is incorrect')
     if data.new_password != data.confirm_password:
         raise HTTPException(status_code=400, detail='New passwords do not match')
-    hashed_password = bcrypt.hashpw(data.new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    hashed_password = hashed_password = pwd_context.hash(data.new_password)
 
     user.password = hashed_password
     db.add(user)
