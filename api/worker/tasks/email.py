@@ -1,15 +1,11 @@
-import asyncio
+def get_smtp_config(db):
+    from fastapi_mail import ConnectionConfig
+    from sqlmodel import select
 
-from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
-from jinja2 import Template
-from sqlmodel import Session, select
-
-from api.constants import ApplicationSettings
-from api.database import get_sync_session
-from api.database.models.application_setting import ApplicationSetting
+    from api.constants import ApplicationSettings
+    from api.database.models.application_setting import ApplicationSetting
 
 
-def get_smtp_config(db: Session):
     def get_setting_value(name: str) -> str:
         q = (
             select(ApplicationSetting)
@@ -38,13 +34,21 @@ def get_smtp_config(db: Session):
 
 
 def send_email(template: str, data: dict, subject: str, recipients: list[str]):
+    import asyncio
+
+    from fastapi_mail import FastMail, MessageSchema, MessageType
+    from jinja2 import Template
+
+    from api.database import get_sync_session
+
+
     with get_sync_session() as session:
         with open(template) as file:
             email_template = Template(file.read())
         rendered_html = email_template.render(**data)
         message = MessageSchema(
             subject=subject,
-            recipients=recipients,
+            recipients=recipients, # type: ignore
             body=rendered_html,
             subtype=MessageType.html
         )

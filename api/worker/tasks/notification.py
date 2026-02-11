@@ -1,12 +1,3 @@
-from constants import ApplicationSettings
-from sqlmodel import insert, literal, select
-
-from api.database import get_sync_session
-from api.database.models.application_setting import ApplicationSetting
-from api.database.models.notification import Notification
-from api.database.models.user import User
-
-
 def notify_user(
     triggered_by: int,
     user_id: int,
@@ -14,6 +5,14 @@ def notify_user(
     title: str,
     body: str
 ):
+    from constants import ApplicationSettings
+    from sqlmodel import select
+
+    from api.database import get_sync_session
+    from api.database.models.application_setting import ApplicationSetting
+    from api.database.models.notification import Notification
+
+
     with get_sync_session() as session:
         result = session.exec(
             select(ApplicationSetting)
@@ -45,6 +44,15 @@ def notify_role(
     title: str,
     body: str
 ):
+    from constants import ApplicationSettings
+    from sqlmodel import insert, literal, select
+
+    from api.database import get_sync_session
+    from api.database.models.application_setting import ApplicationSetting
+    from api.database.models.notification import Notification
+    from api.database.models.user import User
+
+
     with get_sync_session() as session:
         result = session.exec(
             select(ApplicationSetting)

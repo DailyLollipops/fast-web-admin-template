@@ -1,5 +1,6 @@
 from typing import Annotated
 
+import pyotp
 from constants import ApplicationSettings, VerificationMethod
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -99,7 +100,8 @@ async def register_user(
         email=data.email,
         provider='native',
         password=hashed_password,
-        verified=True if verification_method == VerificationMethod.NONE else False
+        verified=True if verification_method == VerificationMethod.NONE else False,
+        tfa_secret=pyotp.random_base32(),
     )
     db.add(new_user)
     await db.commit()
