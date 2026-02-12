@@ -3,6 +3,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Annotated
 
+import pyotp
 from fastapi import APIRouter, Depends, HTTPException, status
 from passlib.context import CryptContext
 from sqlalchemy import or_
@@ -28,7 +29,12 @@ PROFILE_DIR.mkdir(parents=True, exist_ok=True)
 
 pwd_context = CryptContext(schemes=['argon2'], deprecated='auto')
 
-CreateSchema, UpdateSchema, ResponseSchema, ListResponseSchema = make_crud_schemas(User)
+CreateSchema, UpdateSchema, ResponseSchema, ListResponseSchema = make_crud_schemas(
+    User,
+    addtl_excluded_create_fields=['tfa_secret'],
+    addtl_excluded_response_fields=['tfa_secret'],
+    addtl_excluded_update_fields=['tfa_secret'],
+)
 UserCreate = CreateSchema
 UserUpdate = UpdateSchema
 
@@ -59,7 +65,7 @@ async def create_user(
         if setting.value == VerificationMethod.NONE:
             data.verified = True # type: ignore
 
-        obj = User(**data.model_dump())
+        obj = User(**data.model_dump(), tfa_secret=pyotp.random_base32())
         result = await queryutil.create_one(db, obj)
         return result
     except HTTPException as ex:

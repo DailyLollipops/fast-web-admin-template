@@ -1,5 +1,8 @@
 import { AuthProvider } from "react-admin";
+
+import { googleLoginFlow } from "./auth/google";
 import { API_URL } from "../constants";
+import { nativeLoginFlow } from "./auth/native";
 
 const refreshToken = async () => {
   const response = await fetch(`${API_URL}/auth/refresh`, {
@@ -15,56 +18,10 @@ export const authProvider: AuthProvider = {
     const remember = params?.remember || false;
 
     if (params?.provider === "google") {
-      return new Promise((resolve, reject) => {
-        let loginUrl = `${API_URL}/auth/google/login?next_url=${encodeURIComponent(window.location.origin)}`;
-        if (remember) {
-          loginUrl += "&remember=true";
-        }
-
-        const popup = window.open(
-          loginUrl,
-          "GoogleLogin",
-          "width=500,height=600",
-        );
-        if (!popup) return reject("Popup blocked");
-        const listener = (event: MessageEvent) => {
-          if (event.origin !== window.location.origin) return;
-          if (event.data === "login-success") {
-            window.removeEventListener("message", listener);
-            resolve(true);
-          }
-        };
-
-        window.addEventListener("message", listener);
-      });
+      return await googleLoginFlow(remember);
     }
 
-    // Native login method
-    const { username, password } = params;
-    const formData = new URLSearchParams();
-    formData.append("username", username);
-    formData.append("password", password);
-
-    let loginUrl = `${API_URL}/auth/login`;
-    if (remember) {
-      loginUrl += "?remember=true";
-    }
-
-    const response = await fetch(loginUrl, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: formData.toString(),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      return Promise.reject(error.message || "Login failed");
-    }
-
-    return Promise.resolve();
+    return await nativeLoginFlow(params.username, params.password, remember);
   },
 
   logout: async () => {

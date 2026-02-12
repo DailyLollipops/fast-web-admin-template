@@ -32,6 +32,7 @@ def create_env_file(app_name: str, jaeger_username: str, jaeger_password: str, o
         access_token_ex=3600,
         refresh_token_ex=86400,
         email_token_ex=900,
+        tfa_token_ex=300,
         jaeger_username=jaeger_username,
         jaeger_password=jaeger_password,
         jaeger_password_hash=hashed.replace('$', '$$'),

@@ -1,7 +1,8 @@
 from typing import Annotated
 
+import pyotp
 from authlib.integrations.starlette_client import OAuth
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
 from fastapi.responses import HTMLResponse
 from itsdangerous import URLSafeTimedSerializer
 from loguru import logger
@@ -40,6 +41,7 @@ class GoogleUserSchema(BaseModel):
 
 class OAuthStateSchema(BaseModel):
     next_url: str = ''
+    tfa_url: str = ''
     remember: bool = False
 
 
@@ -75,9 +77,11 @@ async def google_login(request: Request, next_url: str = '/', remember: bool = F
 @router.get('/callback', name='google_callback')
 async def google_callback(
     request: Request,
+    response: Response,
     db: Annotated[AsyncSession, Depends(get_async_db)],
     notification_queue: Annotated[Queue, Depends(get_notification_queue)],
-    state: str = ''
+    tfa_verified: Annotated[str | None, Cookie()] = None,
+    state: str = '',
 ):
     oauth_state = verify_oauth_state(state)
     logger.debug(f'OAuth state: {oauth_state}')
@@ -98,6 +102,7 @@ async def google_callback(
             provider='google',
             provider_id=google_user.sub,
             verified=True,
+            tfa_secret=pyotp.random_base32(),
         )
         db.add(user)
         await db.commit()
@@ -121,6 +126,34 @@ async def google_callback(
             body=f'Hello {user.name}, welcome to the app!'
         )
 
+    if user.tfa_methods and not tfa_verified:
+        tfa_token = create_access_token(data={'sub': user.email}, salt='user-tfa')
+        user_info = create_access_token(data=user_info, salt='user-info')
+        response = HTMLResponse(content=f"""
+            <script>
+                if (window.opener) {{
+                    window.opener.postMessage("tfa-required?tfa_token={tfa_token}&user_info={user_info}&methods={','.join(user.tfa_methods)}", window.location.origin);
+                    window.close();
+                }} else {{
+                    window.location.href = "/2fa";
+                }}
+            </script>
+        """)  # noqa: E501
+
+        response.set_cookie(
+            key='tfa_token',
+            value=tfa_token,
+            httponly=True,
+            secure=True,
+            samesite='lax',
+            max_age=settings.TFA_TOKEN_EX,
+        )
+
+        return response
+        
+    if tfa_verified and tfa_verified != '1':
+        raise HTTPException(status_code=401, detail='Invalid TFA verification status')
+
     access_token = create_access_token(data={'sub': user.email}, salt='user-auth')
     refresh_token = create_access_token(data={'sub': user.email}, salt='user-refresh')
     response = HTMLResponse(content="""
@@ -135,6 +168,9 @@ async def google_callback(
         """
     )
 
+    response.delete_cookie(key='tfa_token')
+    response.delete_cookie(key='tfa_verified')
+    response.delete_cookie(key='user_info')
     response.set_cookie(
         key='access_token',
         value=access_token,
@@ -156,3 +192,65 @@ async def google_callback(
         )
 
     return response
+
+
+@router.post('/login_2fa')
+async def login_2fa(
+    response: Response,
+    db: Annotated[AsyncSession, Depends(get_async_db)],
+    tfa_verified: Annotated[str, Cookie()],
+    user_info: Annotated[str, Cookie()],
+    remember: bool = False,
+):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail='Invalid user_info token',
+    )
+
+    if tfa_verified != '1':
+        raise HTTPException(status_code=401, detail='TFA verification required')
+
+    try:
+        serializer = URLSafeTimedSerializer(settings.SECRET_KEY)
+        payload = serializer.loads(user_info, max_age=settings.ACCESS_TOKEN_EX, salt='user-info')
+    except Exception as ex:
+        raise credentials_exception from ex
+    
+    google_user = GoogleUserSchema(**payload)
+    result = await db.exec(select(User).where(User.email == google_user.email))
+    user = result.first()
+    if not user:
+        raise HTTPException(status_code=400, detail='User not found')
+
+    access_token = create_access_token(data={'sub': user.email}, salt='user-auth')
+    refresh_token = create_access_token(data={'sub': user.email}, salt='user-refresh')
+
+    response.delete_cookie(key='tfa_token')
+    response.delete_cookie(key='tfa_verified')
+    response.delete_cookie(key='user_info')
+    response.set_cookie(
+        key='access_token',
+        value=access_token,
+        httponly=True,
+        secure=True,
+        samesite='lax',
+        max_age=settings.ACCESS_TOKEN_EX,
+    )
+
+    if remember:
+        response.set_cookie(
+            key='refresh_token',
+            value=refresh_token,
+            httponly=True,
+            secure=True,
+            samesite='lax',
+            max_age=settings.REFRESH_TOKEN_EX,
+            path="/api/refresh",
+        )
+
+    data = {
+        'access_token': access_token,
+        'refresh_token': refresh_token,
+        'token_type': 'bearer',
+    }
+    return data

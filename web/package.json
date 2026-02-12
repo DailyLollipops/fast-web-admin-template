@@ -15,6 +15,7 @@
     "@monaco-editor/react": "^4.7.0",
     "@mui/icons-material": "^7.0.1",
     "@mui/material": "^7.0.1",
+    "qrcode.react": "^4.2.0",
     "ra-input-rich-text": "^5.11.3",
     "react": "^19.0.0",
     "react-admin": "^5.9.0",

@@ -1,11 +1,14 @@
-import { Title, useGetIdentity } from "react-admin";
+import { Loading, Title, useGetIdentity } from "react-admin";
 import { Card, CardContent, Grid, Typography } from "@mui/material";
 import { ProfileCard } from "@/components";
 import { AccountSecurity } from "./Profile/AccountSecurity";
 
 export const Profile = () => {
   const { identity } = useGetIdentity();
-  console.log("User Identity:", identity);
+
+  if (!identity) {
+    return <Loading />;
+  }
 
   return (
     <Card sx={{ minHeight: "calc(100vh - 48px)" }}>

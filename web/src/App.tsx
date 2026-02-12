@@ -8,6 +8,7 @@ import {
   RegisterPage,
   ForgotPasswordPage,
   ResetPasswordPage,
+  TfaVerificationWindow,
   Dashboard,
   Settings,
   Profile,
@@ -43,6 +44,7 @@ export const App = () => (
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/2fa" element={<TfaVerificationWindow />} />
     </CustomRoutes>
   </Admin>
 );

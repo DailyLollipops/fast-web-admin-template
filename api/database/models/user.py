@@ -2,7 +2,7 @@
 # pyright: reportUndefinedVariable=false
 from datetime import datetime
 
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import JSON, Column, Field, Relationship, SQLModel
 
 
 class User(SQLModel, table=True):
@@ -18,6 +18,8 @@ class User(SQLModel, table=True):
     profile: str | None = Field(nullable=True, default=None)
     verified: bool = Field(default=False)
     api: str | None = Field(nullable=True, default=None)
+    tfa_secret: str | None = Field(nullable=True, default=None)
+    tfa_methods: list[str] = Field(sa_column=Column(JSON), default_factory=list)
     created_at: datetime = Field(default_factory=lambda: datetime.now())
     updated_at: datetime = Field(
         default_factory=lambda: datetime.now(),

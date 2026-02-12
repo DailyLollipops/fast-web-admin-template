@@ -12,19 +12,23 @@ import {
   Typography,
 } from "@mui/material";
 import { useGetIdentity, useDataProvider } from "react-admin";
-import LockResetIcon from "@mui/icons-material/LockReset";
-import EmailIcon from "@mui/icons-material/Email";
-import SecurityIcon from "@mui/icons-material/Security";
-import LogoutIcon from "@mui/icons-material/Logout";
-import VpnKeyIcon from "@mui/icons-material/VpnKey";
-import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import {
+  ContentCopy,
+  Email,
+  LockReset,
+  Logout,
+  Security,
+  VpnKey,
+} from "@mui/icons-material";
 import { UpdatePasswordDialog } from "./UpdatePasswordDialog";
+import { TfaSetupDialog } from "./TfaSetupDialog";
 
 export const AccountSecurity = () => {
   const dataProvider = useDataProvider();
   const { identity } = useGetIdentity();
   const [showUpdatePasswordDialog, setOpenUpdatePasswordDialog] =
     useState(false);
+  const [showTFASetupDialog, setOpenTFASetupDialog] = useState(false);
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [showApiKey, setShowApiKey] = useState(false);
 
@@ -68,6 +72,11 @@ export const AccountSecurity = () => {
         onClose={() => setOpenUpdatePasswordDialog(false)}
       />
 
+      <TfaSetupDialog
+        open={showTFASetupDialog}
+        onClose={() => setOpenTFASetupDialog(false)}
+      />
+
       <Card
         sx={{
           p: 2,
@@ -88,7 +97,7 @@ export const AccountSecurity = () => {
             }
           >
             <ListItemIcon>
-              <LockResetIcon />
+              <LockReset />
             </ListItemIcon>
             <ListItemText
               primary="Update Password"
@@ -108,7 +117,7 @@ export const AccountSecurity = () => {
             }
           >
             <ListItemIcon>
-              <EmailIcon />
+              <Email />
             </ListItemIcon>
             <ListItemText
               primary="Reset Email"
@@ -121,17 +130,17 @@ export const AccountSecurity = () => {
               <Button
                 variant="outlined"
                 size="small"
-                onClick={handleNotImplemented}
+                onClick={() => setOpenTFASetupDialog(true)}
               >
-                Enable
+                Setup
               </Button>
             }
           >
             <ListItemIcon>
-              <SecurityIcon />
+              <Security />
             </ListItemIcon>
             <ListItemText
-              primary="Enable Two-Factor Auth"
+              primary="Two-Factor Auth"
               secondary="Add an extra layer of security to your account."
             />
           </ListItem>
@@ -148,7 +157,7 @@ export const AccountSecurity = () => {
             }
           >
             <ListItemIcon>
-              <VpnKeyIcon />
+              <VpnKey />
             </ListItemIcon>
             <ListItemText
               primary="API Key"
@@ -168,7 +177,7 @@ export const AccountSecurity = () => {
                 {maskKey(apiKey ?? "")}
               </Typography>
               <IconButton onClick={handleCopy} size="small">
-                <ContentCopyIcon fontSize="small" />
+                <ContentCopy fontSize="small" />
               </IconButton>
             </Box>
           </Collapse>
@@ -181,7 +190,7 @@ export const AccountSecurity = () => {
             }
           >
             <ListItemIcon>
-              <LogoutIcon color="error" />
+              <Logout color="error" />
             </ListItemIcon>
             <ListItemText
               primary="Logout of All Devices"

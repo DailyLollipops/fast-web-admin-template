@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EX: int = 3600 # 1 hour
     REFRESH_TOKEN_EX: int = 86400 # 1 day
     EMAIL_TOKEN_EX: int = 900 # 15 minutes
+    TFA_TOKEN_EX: int = 300 # 5 minutes
 
     MYSQL_HOST: str
     MYSQL_USER: str

@@ -2,7 +2,7 @@ from typing import Annotated
 
 import pyotp
 from constants import ApplicationSettings, VerificationMethod
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 from itsdangerous import URLSafeTimedSerializer
 from passlib.context import CryptContext
@@ -173,6 +173,7 @@ async def login_user(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Annotated[AsyncSession, Depends(get_async_db)],
     remember: bool = False,
+    tfa_verified: Annotated[str | None, Cookie()] = None,
 ):
     user = await authenticate_user(form_data.username, form_data.password, db)
     if not user:
@@ -180,9 +181,29 @@ async def login_user(
     if not user.verified:
         raise HTTPException(status_code=401, detail='User not verified. Please contact admin for more details!')
 
+    if user.tfa_methods and not tfa_verified:
+        tfa_token = create_access_token(data={'sub': user.email}, salt='user-tfa')
+        response.set_cookie(
+            key='tfa_token',
+            value=tfa_token,
+            httponly=True,
+            secure=True,
+            samesite='lax',
+            max_age=settings.TFA_TOKEN_EX,
+        )
+        return {
+            'tfa_required': True,
+            'tfa_methods': user.tfa_methods
+        }
+        
+    if tfa_verified and tfa_verified != '1':
+        raise HTTPException(status_code=401, detail='Invalid TFA verification status')
+
     access_token = create_access_token(data={'sub': user.email}, salt='user-auth')
     refresh_token = create_access_token(data={'sub': user.email}, salt='user-refresh')
 
+    response.delete_cookie(key='tfa_token')
+    response.delete_cookie(key='tfa_verified')
     response.status_code = status.HTTP_200_OK
     response.set_cookie(
         key='access_token',

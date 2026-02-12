@@ -26,7 +26,7 @@ async def can_access(
     if required_permission is None or role is None:
         return True
 
-    auth_resources = ['auth.*']
+    auth_resources = ['auth.*', 'tfa.*']
     q = select(RoleAccessControl).where(RoleAccessControl.role == role)
     q_result = await db.exec(q)
     result = q_result.first()
@@ -123,7 +123,7 @@ async def get_user_by_jwt_token(db: AsyncSession, token: str):
     return user
 
 
-def get_authenticated_user(required_permission: str):
+def get_authenticated_user(required_permission: str | None = None):
     async def dependency(
         db: Annotated[AsyncSession, Depends(get_async_db)],
         current_user: Annotated[User, Depends(get_current_user)],

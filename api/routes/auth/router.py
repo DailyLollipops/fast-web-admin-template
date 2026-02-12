@@ -13,6 +13,7 @@ from api.database.models.user import User
 from api.routes.auth.core import can_access, create_access_token, get_authenticated_user
 from api.routes.auth.google import router as google_router
 from api.routes.auth.native import router as native_router
+from api.routes.auth.tfa import router as tfa_router
 from api.routes.utils.crudutils import make_crud_schemas
 from api.settings import settings
 
@@ -22,6 +23,7 @@ TAGS: list[str | Enum] = ['Authentication (Common)']
 router = APIRouter()
 router.include_router(native_router, prefix='/auth')
 router.include_router(google_router, prefix='/auth/google')
+router.include_router(tfa_router, prefix='/auth/tfa')
 
 CreateSchema, UpdateSchema, ResponseSchema, ListResponseSchema = make_crud_schemas(User)
 
@@ -85,6 +87,9 @@ async def refresh_token(
 @router.post('/auth/logout', tags=TAGS)
 async def logout_user(response: Response,):
     response.status_code = status.HTTP_200_OK
+    response.delete_cookie(key='tfa_verified')
+    response.delete_cookie(key='tfa_token')
+    response.delete_cookie(key='user_info')
     response.delete_cookie(key='access_token')
     response.delete_cookie(key='refresh_token')
     return response

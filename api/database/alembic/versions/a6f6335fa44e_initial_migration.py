@@ -28,12 +28,14 @@ def upgrade() -> None:
         sa.Column('name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column('email', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column('role', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-        sa.Column('provider', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+        sa.Column('provider', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column('provider_id', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
         sa.Column('password', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
         sa.Column('profile', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
         sa.Column('verified', sa.Boolean(), nullable=False),
         sa.Column('api', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+        sa.Column('tfa_secret', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+        sa.Column('tfa_methods', sa.JSON(), nullable=True),
         sa.Column('created_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
         sa.Column('updated_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False, onupdate=sa.text('CURRENT_TIMESTAMP')),
         sa.PrimaryKeyConstraint('id'),
@@ -152,6 +154,11 @@ def upgrade() -> None:
                 'name': 'reset_password',
                 'template_type': 'email',
                 'path': 'templates/emails/reset_password.html.j2',
+            },
+            {
+                'name': 'tfa',
+                'template_type': 'email',
+                'path': 'templates/emails/tfa.html.j2',
             },
         ]
     )
