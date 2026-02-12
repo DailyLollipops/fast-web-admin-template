@@ -1,8 +1,8 @@
-export { LoginPage } from "./Login";
-export { RegisterPage } from "./Register";
-export { ForgotPasswordPage } from "./ForgotPassword";
-export { ResetPasswordPage } from "./ResetPassword";
-export { TfaVerificationWindow } from "./TfaVerification";
+export { LoginPage } from "./auth/Login";
+export { RegisterPage } from "./auth/Register";
+export { ForgotPasswordPage } from "./auth/ForgotPassword";
+export { ResetPasswordPage } from "./auth/ResetPassword";
+export { TfaVerificationWindow } from "./auth/TfaVerification";
 
 export { Dashboard } from "./Dashboard";
 export { Settings } from "./Settings";

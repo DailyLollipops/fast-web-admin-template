@@ -1,7 +1,7 @@
 import { Loading, Title, useGetIdentity } from "react-admin";
 import { Card, CardContent, Grid, Typography } from "@mui/material";
 import { ProfileCard } from "@/components";
-import { AccountSecurity } from "./Profile/AccountSecurity";
+import { AccountSecurity } from "./auth/AccountSecurity";
 
 export const Profile = () => {
   const { identity } = useGetIdentity();
