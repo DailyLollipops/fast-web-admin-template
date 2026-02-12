@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     TFA_TOKEN_EX: int = 300 # 5 minutes
 
     MYSQL_HOST: str
+    MYSQL_PORT: int = 3306
     MYSQL_USER: str
     MYSQL_PASSWORD: str
     MYSQL_DATABASE: str
