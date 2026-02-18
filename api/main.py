@@ -11,6 +11,7 @@ from api.middlewares.tracing import TracingMiddleware, setup_tracing
 from api.routes.application_setting import router as app_setting_router
 from api.routes.auth import router as auth_router
 from api.routes.notification import router as notification_router
+from api.routes.permission import router as permission_router
 from api.routes.role_access_control import router as role_access_control_router
 from api.routes.template import router as template_router
 from api.routes.user import router as user_router
@@ -40,6 +41,7 @@ app.include_router(user_router)
 app.include_router(notification_router)
 app.include_router(app_setting_router)
 app.include_router(role_access_control_router)
+app.include_router(permission_router)
 app.include_router(template_router)
 
 app.mount('/static', StaticFiles(directory=STATIC_DIR), name='static')
