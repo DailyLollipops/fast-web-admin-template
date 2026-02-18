@@ -17,6 +17,7 @@ from api.settings import settings
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/api/auth/login', auto_error=False)
 ACCESS_TOKEN_EXPIRATION = 3600
 
+all_permissions = set()
 
 async def can_access(
     db: AsyncSession,
@@ -124,6 +125,7 @@ async def get_user_by_jwt_token(db: AsyncSession, token: str):
 
 
 def get_authenticated_user(required_permission: str | None = None):
+    all_permissions.add(required_permission)
     async def dependency(
         db: Annotated[AsyncSession, Depends(get_async_db)],
         current_user: Annotated[User, Depends(get_current_user)],

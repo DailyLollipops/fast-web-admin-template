@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Title } from "react-admin";
+import { Form, Title } from "react-admin";
 import { Box, Card, CardContent, Tabs, Tab, Typography } from "@mui/material";
 import { ApplicationSettingsForm } from "./Settings/ApplicationSettingsForm";
 import { RoleAccessSettingsForm } from "./Settings/RoleAccessSettingsForm";
@@ -77,7 +77,9 @@ export const Settings = () => {
         </TabPanel>
 
         <TabPanel value={tab} index={1}>
-          <RoleAccessSettingsForm />
+          <Form>
+            <RoleAccessSettingsForm />
+          </Form>
         </TabPanel>
 
         <TabPanel value={tab} index={2}>
