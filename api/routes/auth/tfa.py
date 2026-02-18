@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 from typing import Annotated
 
 import pyotp
@@ -19,7 +19,7 @@ from api.worker.tasks.email import send_email
 
 router = APIRouter(tags=['Two-Factor Authentication'])
 
-class TfaMethod(str, Enum):
+class TfaMethod(StrEnum):
     AUTHENTICATOR = 'authenticator'
     EMAIL = 'email'
 
