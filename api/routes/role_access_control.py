@@ -1,9 +1,7 @@
-# Generated code for RoleAccessControl model
-
-from enum import Enum
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from api.database import get_async_db
@@ -15,16 +13,18 @@ from api.routes.utils.crudutils import ActionResponse, make_crud_schemas
 from api.routes.utils.queryutil import GetListParams, get_list_params
 
 
-router = APIRouter()
-TAGS: list[str | Enum] = ['RoleAccessControl']
-
+router = APIRouter(tags=['RoleAccessControl'])
 
 CreateSchema, UpdateSchema, ResponseSchema, ListResponseSchema = make_crud_schemas(RoleAccessControl)
 RoleAccessControlCreate = CreateSchema
 RoleAccessControlUpdate = UpdateSchema
 
+class PermissionListResponse(BaseModel):
+    total: int
+    data: list[dict]
 
-@router.post('/role_access_controls', response_model=ResponseSchema, tags=TAGS)
+
+@router.post('/role_access_controls', response_model=ResponseSchema)
 async def create_role_access_control(
     data: RoleAccessControlCreate,
 	current_user: Annotated[User, get_authenticated_user('role_access_controls.create')],
@@ -43,7 +43,7 @@ async def create_role_access_control(
         ) from ex
 
 
-@router.get('/role_access_controls', response_model=ListResponseSchema, tags=['RoleAccessControl'])
+@router.get('/role_access_controls', response_model=ListResponseSchema)
 async def get_role_access_controls(
 	current_user: Annotated[User, get_authenticated_user('role_access_controls.read')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
@@ -62,7 +62,7 @@ async def get_role_access_controls(
         ) from ex
 
 
-@router.get('/role_access_controls/{id}', response_model=ResponseSchema, tags=['RoleAccessControl'])
+@router.get('/role_access_controls/{id}', response_model=ResponseSchema)
 async def get_role_access_control(
 	current_user: Annotated[User, get_authenticated_user('role_access_controls.read')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
@@ -80,7 +80,7 @@ async def get_role_access_control(
         ) from ex
 
 
-@router.patch('/role_access_controls/{id}', response_model=ResponseSchema, tags=['RoleAccessControl'])
+@router.patch('/role_access_controls/{id}', response_model=ResponseSchema)
 async def update_role_access_control(
 	current_user: Annotated[User, get_authenticated_user('role_access_controls.update')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
@@ -104,7 +104,7 @@ async def update_role_access_control(
         ) from ex
 
 
-@router.delete('/role_access_controls/{id}', response_model=ActionResponse, tags=['RoleAccessControl'])
+@router.delete('/role_access_controls/{id}', response_model=ActionResponse)
 async def delete_role_access_control(
 	current_user: Annotated[User, get_authenticated_user('role_access_controls.delete')],
     db: Annotated[AsyncSession, Depends(get_async_db)],

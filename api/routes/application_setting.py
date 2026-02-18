@@ -1,4 +1,3 @@
-from enum import Enum
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -13,9 +12,7 @@ from api.routes.utils.crudutils import ActionResponse, make_crud_schemas
 from api.routes.utils.queryutil import GetListParams, get_list_params
 
 
-router = APIRouter()
-TAGS: list[str | Enum] = ['Application Setting']
-
+router = APIRouter(tags=['Application Setting'])
 
 CreateSchema, UpdateSchema, ResponseSchema, ListResponseSchema = make_crud_schemas(
     ApplicationSetting,
@@ -26,7 +23,7 @@ ApplicationSettingCreate = CreateSchema
 ApplicationSettingUpdate = UpdateSchema
 
 
-@router.post('/application_settings', response_model=ResponseSchema, tags=TAGS)
+@router.post('/application_settings', response_model=ResponseSchema)
 async def create_application_setting(
 	current_user: Annotated[User, get_authenticated_user('application_settings.create')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
@@ -49,7 +46,7 @@ async def create_application_setting(
         ) from ex
 
 
-@router.get('/application_settings', response_model=ListResponseSchema, tags=TAGS)
+@router.get('/application_settings', response_model=ListResponseSchema)
 async def get_application_settings(
 	current_user: Annotated[User, get_authenticated_user('application_settings.read')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
@@ -68,7 +65,7 @@ async def get_application_settings(
         ) from ex
 
 
-@router.get('/application_settings/{id}', response_model=ResponseSchema, tags=TAGS)
+@router.get('/application_settings/{id}', response_model=ResponseSchema)
 async def get_application_setting(
 	current_user: Annotated[User, get_authenticated_user('application_settings.read')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
@@ -86,7 +83,7 @@ async def get_application_setting(
         ) from ex
 
 
-@router.patch('/application_settings/{id}', response_model=ResponseSchema, tags=TAGS)
+@router.patch('/application_settings/{id}', response_model=ResponseSchema)
 async def update_application_setting(
 	current_user: Annotated[User, get_authenticated_user('application_settings.update')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
@@ -111,7 +108,7 @@ async def update_application_setting(
         ) from ex
 
 
-@router.delete('/application_settings/{id}', response_model=ActionResponse, tags=TAGS)
+@router.delete('/application_settings/{id}', response_model=ActionResponse)
 async def delete_application_setting(
 	current_user: Annotated[User, get_authenticated_user('application_settings.delete')],
     db: Annotated[AsyncSession, Depends(get_async_db)],

@@ -1,5 +1,4 @@
 import uuid
-from enum import Enum
 from pathlib import Path
 from typing import Annotated
 
@@ -22,8 +21,7 @@ from api.routes.utils.fileutil import save_base64_image
 from api.routes.utils.queryutil import GetListParams, get_list_params
 
 
-router = APIRouter()
-TAGS: list[str | Enum] = ['User']
+router = APIRouter(tags=['User'])
 PROFILE_DIR = Path(__file__).resolve().parent.parent / "static" / "profiles"
 PROFILE_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -39,7 +37,7 @@ UserCreate = CreateSchema
 UserUpdate = UpdateSchema
 
 
-@router.post('/users', response_model=ResponseSchema, tags=TAGS)
+@router.post('/users', response_model=ResponseSchema)
 async def create_user(
     current_user: Annotated[User, get_authenticated_user('users.create')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
@@ -77,7 +75,7 @@ async def create_user(
         ) from ex
 
 
-@router.get('/users', response_model=ListResponseSchema, tags=TAGS)
+@router.get('/users', response_model=ListResponseSchema)
 async def get_users(
     current_user: Annotated[User, get_authenticated_user('users.read')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
@@ -96,7 +94,7 @@ async def get_users(
         ) from ex
 
 
-@router.get('/users/{id}', response_model=ResponseSchema, tags=TAGS)
+@router.get('/users/{id}', response_model=ResponseSchema)
 async def get_user(
     current_user: Annotated[User, get_authenticated_user('users.read')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
@@ -114,7 +112,7 @@ async def get_user(
         ) from ex
 
 
-@router.patch('/users/{id}', response_model=ResponseSchema, tags=TAGS)
+@router.patch('/users/{id}', response_model=ResponseSchema)
 async def update_user(
 	current_user: Annotated[User, get_authenticated_user('users.read')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
@@ -139,7 +137,7 @@ async def update_user(
         ) from ex
 
 
-@router.delete('/users/{id}', tags=TAGS)
+@router.delete('/users/{id}', response_model=ActionResponse)
 async def delete_user(
     current_user: Annotated[User, get_authenticated_user('users.delete')],
     db: Annotated[AsyncSession, Depends(get_async_db)],

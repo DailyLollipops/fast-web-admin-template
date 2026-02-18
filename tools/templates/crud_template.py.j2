@@ -1,6 +1,5 @@
 # Generated code for {{ model.__name__ }} model
 
-from enum import Enum
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -17,9 +16,7 @@ from api.routes.utils.fileutil import save_base64_image
 from api.routes.utils.queryutil import GetListParams, get_list_params
 
 
-router = APIRouter()
-TAGS: list[str | Enum] = ['{{ model.__name__ }}']
-
+router = APIRouter(tags=['{{ model.__name__ }}'])
 
 CreateSchema, UpdateSchema, ResponseSchema, ListResponseSchema = make_crud_schemas({{ model.__name__ }})
 {{ model.__name__ }}Create = CreateSchema
@@ -45,7 +42,7 @@ async def create_{{ model.__name__.lower() }}(
         ) from ex
 
 
-@router.get('/{{ route_name }}', response_model=ListResponseSchema, tags=['{{ model.__name__ }}'])
+@router.get('/{{ route_name }}', response_model=ListResponseSchema)
 async def get_{{ model.__name__.lower() }}s(
     {%- if create_login_required %}{{ '\n\t' }}current_user: Annotated[User, get_authenticated_user('{{ route_name }}.read')], {%- endif %}
     db: Annotated[AsyncSession, Depends(get_async_db)],
@@ -64,7 +61,7 @@ async def get_{{ model.__name__.lower() }}s(
         ) from ex
 
 
-@router.get('/{{  route_name }}/{id}', response_model=ResponseSchema, tags=['{{ model.__name__ }}'])
+@router.get('/{{  route_name }}/{id}', response_model=ResponseSchema)
 async def get_{{ model.__name__.lower() }}(
     {%- if create_login_required %}{{ '\n\t' }}current_user: Annotated[User, get_authenticated_user('{{ route_name }}.read')], {%- endif %}
     db: Annotated[AsyncSession, Depends(get_async_db)],
@@ -82,7 +79,7 @@ async def get_{{ model.__name__.lower() }}(
         ) from ex
 
 
-@router.patch('/{{  route_name }}/{id}', response_model=ResponseSchema, tags=['{{ model.__name__ }}'])
+@router.patch('/{{  route_name }}/{id}', response_model=ResponseSchema)
 async def update_{{ model.__name__.lower() }}(
     {%- if create_login_required %}{{ '\n\t' }}current_user: Annotated[User, get_authenticated_user('{{ route_name }}.update')], {%- endif %}
     db: Annotated[AsyncSession, Depends(get_async_db)],
@@ -101,7 +98,7 @@ async def update_{{ model.__name__.lower() }}(
         ) from ex
 
 
-@router.delete('/{{  route_name }}/{id}', response_model=ActionResponse, tags=['{{ model.__name__ }}'])
+@router.delete('/{{  route_name }}/{id}', response_model=ActionResponse)
 async def delete_{{ model.__name__.lower() }}(
     {%- if create_login_required %}{{ '\n\t' }}current_user: Annotated[User, get_authenticated_user('{{ route_name }}.delete')], {%- endif %}
     db: Annotated[AsyncSession, Depends(get_async_db)],

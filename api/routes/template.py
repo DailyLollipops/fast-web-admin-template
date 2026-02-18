@@ -1,6 +1,5 @@
 import os
 from datetime import datetime
-from enum import Enum
 from pathlib import Path
 from typing import Annotated
 
@@ -16,10 +15,8 @@ from api.routes.utils.crudutils import ActionResponse, make_crud_schemas
 from api.routes.utils.queryutil import GetListParams, get_list_params
 
 
-router = APIRouter()
-TAGS: list[str | Enum] = ['Template']
+router = APIRouter(tags=['Template'])
 TEMPLATE_PATH = Path(__file__).parent.parent / 'templates'
-
 
 CreateSchema, UpdateSchema, ResponseSchema, ListResponseSchema = make_crud_schemas(
     Template,
@@ -38,7 +35,7 @@ def get_template_content(template: Template) -> str:
     return Path(template.path).read_text() if template.path else ''
 
 
-@router.post('/templates', response_model=ResponseSchema, tags=TAGS)
+@router.post('/templates', response_model=ResponseSchema)
 async def create_template(
 	current_user: Annotated[User, get_authenticated_user('templates.create')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
@@ -65,7 +62,7 @@ async def create_template(
         ) from ex
 
 
-@router.get('/templates', response_model=ListResponseSchema, tags=TAGS)
+@router.get('/templates', response_model=ListResponseSchema)
 async def get_templates(
 	current_user: Annotated[User, get_authenticated_user('templates.read')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
@@ -84,7 +81,7 @@ async def get_templates(
         ) from ex
 
 
-@router.get('/templates/{id}', response_model=ResponseSchema, tags=TAGS)
+@router.get('/templates/{id}', response_model=ResponseSchema)
 async def get_template(
 	current_user: Annotated[User, get_authenticated_user('templates.read')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
@@ -102,7 +99,7 @@ async def get_template(
         ) from ex
 
 
-@router.patch('/templates/{id}', response_model=ResponseSchema, tags=TAGS)
+@router.patch('/templates/{id}', response_model=ResponseSchema)
 async def update_template(
 	current_user: Annotated[User, get_authenticated_user('templates.update')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
@@ -133,7 +130,7 @@ async def update_template(
         ) from ex
 
 
-@router.delete('/templates/{id}', response_model=ActionResponse, tags=TAGS)
+@router.delete('/templates/{id}', response_model=ActionResponse)
 async def delete_template(
 	current_user: Annotated[User, get_authenticated_user('templates.delete')],
     db: Annotated[AsyncSession, Depends(get_async_db)],
