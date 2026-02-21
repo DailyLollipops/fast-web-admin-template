@@ -188,7 +188,6 @@ async def google_callback(
             secure=True,
             samesite='lax',
             max_age=settings.REFRESH_TOKEN_EX,
-            path="/api/refresh",
         )
 
     return response
@@ -245,7 +244,6 @@ async def login_2fa(
             secure=True,
             samesite='lax',
             max_age=settings.REFRESH_TOKEN_EX,
-            path="/api/refresh",
         )
 
     data = {
