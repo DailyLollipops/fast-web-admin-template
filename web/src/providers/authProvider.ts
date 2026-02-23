@@ -70,6 +70,9 @@ export const authProvider: AuthProvider = {
   },
 
   canAccess: async ({ action, resource }) => {
+    if (action === "list") {
+      action = "read";
+    }
     const response = await fetch(
       `${API_URL}/auth/check?resource=${resource}&action=${action}`,
       {
