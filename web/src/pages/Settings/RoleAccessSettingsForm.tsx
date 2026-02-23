@@ -50,6 +50,7 @@ export const RoleAccessSettingsForm = () => {
 
   const [selectedRoleIndex, setSelectedRoleIndex] = useState(0);
   const [newPermission, setNewPermission] = useState("");
+  const [inputPermission, setInputPermission] = useState("");
   const [openRoleDialog, setOpenRoleDialog] = useState(false);
   const [newRoleName, setNewRoleName] = useState("");
 
@@ -224,11 +225,15 @@ export const RoleAccessSettingsForm = () => {
                 <Autocomplete
                   disablePortal
                   options={allPermissions?.map((p) => p.name).sort() || []}
-                  inputValue={newPermission}
+                  inputValue={inputPermission}
+                  value={newPermission}
                   onChange={(_, value) => {
                     if (value) {
                       setNewPermission(value);
                     }
+                  }}
+                  onInputChange={(_, newInputValue) => {
+                    setInputPermission(newInputValue);
                   }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
