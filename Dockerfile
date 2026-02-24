@@ -18,8 +18,17 @@ WORKDIR /workspace/app/api
 
 FROM base_python AS worker
 
+RUN apt-get update \
+    && apt-get install -y supervisor \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN uv sync --no-cache --group worker
+COPY ./provision/worker/supervisord-worker.conf /etc/supervisord.conf
+
 WORKDIR /workspace/app/api
+
+COPY ./provision/worker/entrypoint.sh /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
 
 FROM node:22-slim AS base_node
 

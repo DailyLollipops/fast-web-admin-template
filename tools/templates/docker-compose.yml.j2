@@ -71,7 +71,8 @@ services:
       target: worker
     volumes:
       - ./api:/workspace/app/api
-    command: uv run rq worker email notification
+      - ./temp/logs:/temp/logs
+    command: sleep infinity
     depends_on:
       - mysql
       - redis
