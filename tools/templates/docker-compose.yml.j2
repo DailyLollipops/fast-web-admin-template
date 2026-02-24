@@ -273,6 +273,7 @@ services:
       - ./api:/workspace/app/api
       - ./web:/workspace/app/web
       - ./testing:/workspace/app/testing
+      - ./temp/logs:/temp/logs
     environment:
       <<:
         - *python-env
