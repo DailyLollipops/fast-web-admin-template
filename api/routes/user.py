@@ -29,9 +29,9 @@ pwd_context = CryptContext(schemes=['argon2'], deprecated='auto')
 
 CreateSchema, UpdateSchema, ResponseSchema, ListResponseSchema = make_crud_schemas(
     User,
-    addtl_excluded_create_fields=['tfa_secret'],
+    addtl_excluded_create_fields=['tfa_methods', 'tfa_secret'],
     addtl_excluded_response_fields=['tfa_secret'],
-    addtl_excluded_update_fields=['tfa_secret'],
+    addtl_excluded_update_fields=['tfa_methods', 'tfa_secret'],
 )
 UserCreate = CreateSchema
 UserUpdate = UpdateSchema

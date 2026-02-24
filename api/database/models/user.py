@@ -19,7 +19,7 @@ class User(SQLModel, table=True):
     verified: bool = Field(default=False)
     api: str | None = Field(nullable=True, default=None)
     tfa_secret: str | None = Field(nullable=True, default=None)
-    tfa_methods: list[str] = Field(sa_column=Column(JSON), default_factory=list)
+    tfa_methods: list[str] | None = Field(sa_column=Column(JSON), default_factory=list)
     created_at: datetime = Field(default_factory=lambda: datetime.now())
     updated_at: datetime = Field(
         default_factory=lambda: datetime.now(),

@@ -89,21 +89,6 @@ def session_setup_and_teardown():
     if TEMPLATES_DIR.exists():
         shutil.rmtree(TEMPLATES_DIR)
 
-    # Artifacts
-    os.makedirs(ARTIFACTS_DIR, exist_ok=True)
-    logs = [
-        '/var/log/supervisor/api.out.log',
-        '/var/log/supervisor/api.err.log',
-        '/var/log/supervisor/worker.out.log',
-        '/var/log/supervisor/worker.err.log',
-        '/var/log/supervisor/web.out.log',
-        '/var/log/supervisor/web.err.log'
-    ]
-    for log in logs:
-        name = log.split('/')[-1]
-        logpath = ARTIFACTS_DIR / name
-        shutil.copy(log, logpath)
-
 
 @pytest.fixture(scope='function')
 def db_session():

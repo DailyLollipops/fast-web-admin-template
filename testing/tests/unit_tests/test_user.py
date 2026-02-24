@@ -71,7 +71,7 @@ def test_user_crud(
         '/api/users',
         data=original_data,
     )
-    assert create_response.status == expected_status_codes['create']
+    assert create_response.status == expected_status_codes['create'], create_response.text()
 
     if create_response.status == 200:
         data = create_response.json()
