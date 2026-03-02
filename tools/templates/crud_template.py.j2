@@ -5,14 +5,12 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from api.constants import ApplicationSettings, VerificationMethod
 from api.database import get_async_db
 from api.database.models.user import User
 from api.database.models.{{ module }} import {{ model.__name__ }}
 from api.routes.auth import get_authenticated_user
 from api.routes.utils import queryutil
 from api.routes.utils.crudutils import ActionResponse, make_crud_schemas
-from api.routes.utils.fileutil import save_base64_image
 from api.routes.utils.queryutil import GetListParams, get_list_params
 
 
@@ -23,7 +21,7 @@ CreateSchema, UpdateSchema, ResponseSchema, ListResponseSchema = make_crud_schem
 {{ model.__name__ }}Update = UpdateSchema
 
 
-@router.post('/{{ route_name }}', response_model=ResponseSchema, tags=TAGS)
+@router.post('/{{ route_name }}', response_model=ResponseSchema)
 async def create_{{ model.__name__.lower() }}(
     {%- if create_login_required %}{{ '\n\t' }}current_user: Annotated[User, get_authenticated_user('{{ route_name }}.create')], {%- endif %}
     db: Annotated[AsyncSession, Depends(get_async_db)],
