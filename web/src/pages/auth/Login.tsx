@@ -59,6 +59,7 @@ export const LoginPage = () => {
               sx={{ mt: 3, width: "100%" }}
             >
               <TextField
+                id="email"
                 label="Email Address"
                 type="email"
                 fullWidth
@@ -68,6 +69,7 @@ export const LoginPage = () => {
                 onChange={(e) => setEmail(e.target.value)}
               />
               <TextField
+                id="password"
                 label="Password"
                 type="password"
                 fullWidth
@@ -89,6 +91,7 @@ export const LoginPage = () => {
                 <FormControlLabel
                   control={
                     <Checkbox
+                      id="remember-me"
                       checked={rememberMe}
                       onChange={(e) => setRememberMe(e.target.checked)}
                       color="primary"
@@ -97,6 +100,7 @@ export const LoginPage = () => {
                   label="Remember me"
                 />
                 <Link
+                  id="forgot-password"
                   component="button"
                   type="button"
                   underline="hover"
@@ -107,6 +111,7 @@ export const LoginPage = () => {
               </Box>
 
               <Button
+                id="login"
                 type="submit"
                 fullWidth
                 variant="contained"
@@ -135,6 +140,7 @@ export const LoginPage = () => {
               >
                 Don&apos;t have an account?{" "}
                 <Link
+                  id="register"
                   component="button"
                   underline="hover"
                   onClick={() => navigate("/register")}

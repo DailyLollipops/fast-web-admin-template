@@ -56,23 +56,31 @@ CMD ["serve", "-s", "dist", "-l", "5173"]
 
 FROM base_python AS testing
 
+ENV DISPLAY=:99
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+ENV VITE_BASE_API_URL=http://localhost:8000
+
+EXPOSE 6080 5900
+
 COPY --from=base_node /usr/local /usr/local
 
-RUN apt-get update \
-    && apt-get install -y supervisor iproute2 net-tools lsof curl \
+RUN apt-get update && apt-get install -y \
+    supervisor iproute2 net-tools lsof curl xvfb x11vnc fluxbox websockify novnc xsel \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace/app/api
 RUN uv sync --all-groups
-# RUN uv run playwright install
+RUN uv run playwright install --with-deps
+COPY ./api /workspace/app/api
 
-WORKDIR /workspace/app/web
-COPY ./web/package*.json /workspace/app/web/
+WORKDIR /workspace/app/web/*
+COPY ./web /workspace/app/web
 RUN npm install
 RUN npm install -D vite
+RUN npm install -g serve
+RUN npm run build
 
 WORKDIR /workspace/app/testing
-
 COPY ./provision/testing/supervisord-testing.conf /etc/supervisord.conf
 COPY ./provision/testing/entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]

@@ -12,7 +12,7 @@ from passlib.context import CryptContext
 from playwright.sync_api import APIRequestContext, Playwright
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import sessionmaker
-from sqlmodel import Session, create_engine, text
+from sqlmodel import Session, create_engine, select, text
 
 from api.database.models.notification import Notification
 from api.database.models.user import User
@@ -45,6 +45,10 @@ def session_setup_and_teardown():
             # Seed users
             users: list[User] = []
             for role, user in USERS.items():
+                existing_user = session.exec(select(User).where(User.email == user['email']))
+                if existing_user.first():
+                    continue
+
                 new_user = User(
                     name=user['name'],
                     email=user['email'],

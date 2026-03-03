@@ -3,6 +3,7 @@ import { Box, Button } from "@mui/material";
 export const GoogleSignInButton = ({ onClick }: { onClick: () => void }) => {
   return (
     <Button
+      id="login-google"
       fullWidth
       onClick={onClick}
       sx={{
