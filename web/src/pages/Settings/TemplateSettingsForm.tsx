@@ -10,7 +10,15 @@ import {
   FileField,
   SelectInput,
 } from "react-admin";
-import { Typography, Grid, Box, Tooltip, IconButton } from "@mui/material";
+import {
+  Box,
+  Divider,
+  Grid,
+  IconButton,
+  Tooltip,
+  Typography,
+  useTheme,
+} from "@mui/material";
 import { useFormContext, Controller } from "react-hook-form";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import Editor from "@monaco-editor/react";
@@ -32,9 +40,11 @@ export const TemplateSettingsForm = () => {
     meta: { infinite: true },
   });
 
+  const theme = useTheme();
   const notify = useNotify();
   const [selected, setSelected] = useState<Template | null>(null);
   const [uploadedContent, setUploadedContent] = useState<string | null>(null);
+  const monacoTheme = theme.palette.mode === "dark" ? "vs-dark" : "light";
 
   if (isLoading) return null;
   const templates = data as Template[] | undefined;
@@ -64,7 +74,7 @@ export const TemplateSettingsForm = () => {
     };
 
     return (
-      <Toolbar sx={{ my: 2 }}>
+      <Toolbar sx={{ mt: 2, justifyContent: "flex-end" }}>
         <SaveButton label="Save All" onClick={handleSave} alwaysEnable />
       </Toolbar>
     );
@@ -133,8 +143,11 @@ export const TemplateSettingsForm = () => {
         }}
       >
         {/* Row 1: Template select + Upload */}
-        <Grid container spacing={2} sx={{ mb: 2 }}>
+        <Grid container spacing={2} alignItems="end">
           <Grid size={6}>
+            <Typography variant="subtitle2" gutterBottom>
+              Template Selection
+            </Typography>
             <SelectInput
               source="templateSelect"
               label="Select Template"
@@ -173,6 +186,8 @@ export const TemplateSettingsForm = () => {
           </Grid>
         </Grid>
 
+        <Divider sx={{ mb: 2 }} />
+
         {/* Row 2: Editor + Preview */}
         <Grid container spacing={2}>
           <Grid size={{ xs: 12, md: 6 }}>
@@ -206,13 +221,13 @@ export const TemplateSettingsForm = () => {
                       borderRadius: 1,
                       p: 2,
                       height: "450px",
-                      backgroundColor: "#fafafa",
                       overflow: "auto",
                     }}
                   >
                     <Editor
                       height="100%"
                       language={getLanguageForTemplate(selected.template_type)}
+                      theme={monacoTheme}
                       value={uploadedContent ?? field.value}
                       onChange={(value) => {
                         setUploadedContent(null);
@@ -245,7 +260,6 @@ export const TemplateSettingsForm = () => {
                 borderRadius: 1,
                 p: 2,
                 minHeight: "350px",
-                backgroundColor: "#fafafa",
                 overflow: "auto",
               }}
             >
