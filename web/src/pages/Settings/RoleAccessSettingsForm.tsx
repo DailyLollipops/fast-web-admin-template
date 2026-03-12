@@ -45,11 +45,11 @@ export const RoleAccessSettingsForm = () => {
 
   const [create] = useCreate();
   const [update] = useUpdate();
+
   const { watch, setValue, getValues } = useFormContext<FormValues>();
   const roles = watch("roles") || [];
 
   const [selectedRoleIndex, setSelectedRoleIndex] = useState(0);
-  const [newPermission, setNewPermission] = useState("");
   const [inputPermission, setInputPermission] = useState("");
   const [openRoleDialog, setOpenRoleDialog] = useState(false);
   const [newRoleName, setNewRoleName] = useState("");
@@ -97,21 +97,24 @@ export const RoleAccessSettingsForm = () => {
   const addPermission = () => {
     if (!selectedRole) return;
 
-    const trimmed = newPermission.trim();
+    const trimmed = inputPermission.trim();
     if (!trimmed) return;
 
     if (selectedRole.permissions.includes(trimmed)) {
-      setNewPermission("");
+      setInputPermission("");
       return;
     }
 
     const updated = [...selectedRole.permissions, trimmed];
+
     setValue(`roles.${selectedRoleIndex}.permissions`, updated, {
       shouldDirty: true,
     });
-    setNewPermission("");
+
+    setInputPermission("");
 
     const currentRole = getValues(`roles.${selectedRoleIndex}`);
+
     update("role_access_controls", {
       id: currentRole.id,
       data: {
@@ -126,11 +129,13 @@ export const RoleAccessSettingsForm = () => {
     if (!selectedRole) return;
 
     const updated = selectedRole.permissions.filter((p) => p !== permission);
+
     setValue(`roles.${selectedRoleIndex}.permissions`, updated, {
       shouldDirty: true,
     });
 
     const currentRole = getValues(`roles.${selectedRoleIndex}`);
+
     update("role_access_controls", {
       id: currentRole.id,
       data: {
@@ -202,7 +207,7 @@ export const RoleAccessSettingsForm = () => {
           <List dense>
             {roles.map((role, index) => (
               <ListItemButton
-                key={index}
+                key={role.role}
                 selected={selectedRoleIndex === index}
                 onClick={() => setSelectedRoleIndex(index)}
               >
@@ -223,22 +228,15 @@ export const RoleAccessSettingsForm = () => {
 
               <Box display="flex" gap={2} mb={2} alignItems="center">
                 <Autocomplete
-                  disablePortal
+                  freeSolo
                   options={allPermissions?.map((p) => p.name).sort() || []}
                   inputValue={inputPermission}
-                  value={newPermission}
-                  onChange={(_, value) => {
-                    if (value) {
-                      setNewPermission(value);
-                    }
-                  }}
                   onInputChange={(_, newInputValue) => {
                     setInputPermission(newInputValue);
                   }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
-                      e.stopPropagation();
                       addPermission();
                     }
                   }}
