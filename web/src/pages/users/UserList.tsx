@@ -1,6 +1,7 @@
 import {
   BooleanField,
   ColumnsButton,
+  CreateButton,
   DataTable,
   DateField,
   EmailField,
@@ -13,6 +14,7 @@ import {
 const userFilters = [<SearchInput key="q" source="email_ilike" alwaysOn />];
 const UserListActions = () => (
   <TopToolbar>
+    <CreateButton />
     <ColumnsButton />
     <ExportButton />
   </TopToolbar>
