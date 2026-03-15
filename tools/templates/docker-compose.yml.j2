@@ -98,6 +98,9 @@ services:
       - "--query.base-path=/jaeger"
     networks:
       - app_network
+    profiles:
+      - dev
+      - prod
 
   dev-api:
     build:
@@ -263,6 +266,16 @@ services:
     networks:
       - app_network
       - proxy
+    profiles:
+      - shared
+
+  shared-jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: {{ app_name }}-jaeger
+    command:
+      - "--query.base-path=/jaeger"
+    networks:
+      - app_network
     profiles:
       - shared
 

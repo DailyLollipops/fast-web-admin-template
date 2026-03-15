@@ -7,7 +7,7 @@
     }
 
     reverse_proxy /api/* {% if prefix %}{{ prefix }}-{%- endif %}api:8000
-    reverse_proxy /jaeger/* {% if prefix %}{{ prefix }}-{%- endif %}jaeger:16686
+    reverse_proxy /jaeger/* {% if prefix not in ['dev', 'prod'] %}{{ prefix }}-{%- endif %}jaeger:16686
     reverse_proxy /* {% if prefix %}{{ prefix }}-{%- endif %}web:5173
 }
 

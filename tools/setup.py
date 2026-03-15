@@ -98,7 +98,7 @@ def generate_compose_file(app_name: str, outfile: str):
 
 
 @click.command()
-@click.option('--app-name', prompt=True, help='Jaeger admin username')
+@click.argument('app_name')
 def generate_caddy_config(app_name):
     create_caddy_file(app_name)
 
