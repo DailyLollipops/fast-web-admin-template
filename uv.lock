@@ -61,6 +61,34 @@ wheels = [
 ]
 
 [[package]]
+name = "ansible"
+version = "13.4.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "ansible-core" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e9/46/4f064be3a13f1239f259b3e6ebe94d52d609aac430eeaa6a0b36a5ca071d/ansible-13.4.0.tar.gz", hash = "sha256:6d741511abc1f724443aa16992fb615cc822a22da427ade925ff937ccd691eb1", size = 52775271, upload-time = "2026-02-24T17:37:24.69Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/96/62/3dff5689b6a6eb8d25d987507ab87660b76b0d87e152caf64ec045edac64/ansible-13.4.0-py3-none-any.whl", hash = "sha256:8c869fcc07954b53c5b125f1e914957cc7b541a92a7d512496207d80385a78eb", size = 55274148, upload-time = "2026-02-24T17:37:19.4Z" },
+]
+
+[[package]]
+name = "ansible-core"
+version = "2.20.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "cryptography" },
+    { name = "jinja2" },
+    { name = "packaging" },
+    { name = "pyyaml" },
+    { name = "resolvelib" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/03/d6/2a1fda59f9bab7519f2e94a7bec8416e080dd2e17af4f4fb5d1e3d0c997d/ansible_core-2.20.3.tar.gz", hash = "sha256:38670ab2d2ffd67ee7e9e562f7c94e0927c8b7b4b0eb69233bc008c29e32d591", size = 3325132, upload-time = "2026-02-23T23:09:01.4Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/16/e0/2e5602b2a3d71622894e5ba0a6071e896f1fef795cf7acde5d13ff308833/ansible_core-2.20.3-py3-none-any.whl", hash = "sha256:7fe2da953192cac5d5eb37bfc984bf9339daa252e0e3d1deb5526eb1f8be9f7f", size = 2403438, upload-time = "2026-02-23T23:08:59.605Z" },
+]
+
+[[package]]
 name = "anyio"
 version = "4.12.1"
 source = { registry = "https://pypi.org/simple" }
@@ -512,6 +540,7 @@ api = [
     { name = "sqlmodel" },
 ]
 dev = [
+    { name = "ansible" },
     { name = "click" },
     { name = "nltk" },
     { name = "playwright" },
@@ -570,6 +599,7 @@ api = [
     { name = "sqlmodel", specifier = ">=0.0.24" },
 ]
 dev = [
+    { name = "ansible", specifier = ">=13.4.0" },
     { name = "click", specifier = ">=8.2.1" },
     { name = "nltk", specifier = ">=3.9.1" },
     { name = "playwright", specifier = ">=1.57.0" },
@@ -1934,6 +1964,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/c9/74/b3ff8e6c8446842c3f5c837e9c3dfcfe2018ea6ecef224c710c85ef728f4/requests-2.32.5.tar.gz", hash = "sha256:dbba0bac56e100853db0ea71b82b4dfd5fe2bf6d3754a8893c3af500cec7d7cf", size = 134517, upload-time = "2025-08-18T20:46:02.573Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/1e/db/4254e3eabe8020b458f1a747140d32277ec7a271daf1d235b70dc0b4e6e3/requests-2.32.5-py3-none-any.whl", hash = "sha256:2462f94637a34fd532264295e186976db0f5d453d1cdd31473c85a6a161affb6", size = 64738, upload-time = "2025-08-18T20:46:00.542Z" },
+]
+
+[[package]]
+name = "resolvelib"
+version = "1.2.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/1d/14/4669927e06631070edb968c78fdb6ce8992e27c9ab2cde4b3993e22ac7af/resolvelib-1.2.1.tar.gz", hash = "sha256:7d08a2022f6e16ce405d60b68c390f054efcfd0477d4b9bd019cc941c28fad1c", size = 24575, upload-time = "2025-10-11T01:07:44.582Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e2/23/c941a0d0353681ca138489983c4309e0f5095dfd902e1357004f2357ddf2/resolvelib-1.2.1-py3-none-any.whl", hash = "sha256:fb06b66c8da04172d9e72a21d7d06186d8919e32ae5ab5cdf5b9d920be805ac2", size = 18737, upload-time = "2025-10-11T01:07:43.081Z" },
 ]
 
 [[package]]

@@ -1,0 +1,137 @@
+- name: Deploy application to remote instance
+  hosts: aws_hosts
+  become: yes
+
+  vars:
+    user: "{{ ansible_user }}"
+    repo_url: "git@github.com:ClarenceMadrigal/pbots-admin.git"
+    branch: "main"
+    dest_path: "/home/admin/pbots-admin"
+    ssh_key_file: "/home/{{ user }}/.ssh/deploy_key"
+    domain_ip: "{{ ansible_host }}"
+    caddyfile_src: "{{ dest_path }}/provision/caddy/Caddyfile.prod"
+
+  tasks:
+    - name: System setup and dependencies
+      block:
+        - name: Install base packages
+          apt:
+            name:
+              - git
+              - ca-certificates
+              - curl
+              - gnupg
+              - lsb-release
+            state: present
+            update_cache: yes
+
+        - name: Ensure apt keyrings directory exists
+          file:
+            path: /etc/apt/keyrings
+            state: directory
+            mode: "0755"
+
+        - name: Add Docker GPG key
+          get_url:
+            url: https://download.docker.com/linux/debian/gpg
+            dest: /etc/apt/keyrings/docker.asc
+            mode: "0644"
+
+        - name: Add Docker repository
+          shell: |
+            tee /etc/apt/sources.list.d/docker.sources <<EOF
+            Types: deb
+            URIs: https://download.docker.com/linux/debian
+            Suites: $(. /etc/os-release && echo "$VERSION_CODENAME")
+            Components: stable
+            Signed-By: /etc/apt/keyrings/docker.asc
+            EOF
+
+        - name: Update apt cache
+          apt:
+            update_cache: yes
+
+        - name: Install Docker
+          apt:
+            name:
+              - docker-ce
+              - docker-ce-cli
+              - containerd.io
+              - docker-buildx-plugin
+              - docker-compose-plugin
+            state: present
+
+        - name: Ensure Docker is running
+          systemd:
+            name: docker
+            state: started
+            enabled: yes
+
+    - name: Configure SSH access
+      block:
+        - name: Ensure .ssh directory exists
+          file:
+            path: "/home/{{ user }}/.ssh"
+            state: directory
+            owner: "{{ user }}"
+            group: "{{ user }}"
+            mode: "0700"
+
+        - name: Install deploy SSH key
+          copy:
+            content: "{{ deploy_ssh_key }}"
+            dest: "{{ ssh_key_file }}"
+            owner: "{{ user }}"
+            group: "{{ user }}"
+            mode: "0600"
+
+        - name: Add GitHub to known_hosts
+          known_hosts:
+            name: github.com
+            key: "{{ lookup('pipe', 'ssh-keyscan -H github.com') }}"
+            path: "/home/{{ user }}/.ssh/known_hosts"
+            state: present
+
+    - name: Clone or update repository
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ dest_path }}"
+        version: "{{ branch }}"
+        key_file: "{{ ssh_key_file }}"
+        accept_hostkey: yes
+        force: yes
+
+    - name: Configure application files
+      block:
+        - name: Copy .env file
+          copy:
+            src: "{{ playbook_dir }}/../../.env"
+            dest: "{{ dest_path }}"
+            owner: "{{ user }}"
+            group: "{{ user }}"
+            mode: "0600"
+
+        - name: Make entrypoint executable
+          file:
+            path: "{{ dest_path }}/provision/worker/entrypoint.sh"
+            state: file
+            owner: "{{ user }}"
+            group: "{{ user }}"
+            mode: "0755"
+
+    - name: Start application (Docker Compose)
+      community.docker.docker_compose_v2:
+        project_src: "{{ dest_path }}"
+        profiles:
+          - prod
+        state: present
+        build: always
+        recreate: always
+        remove_orphans: true
+
+    - name: Run database migrations
+      command: >
+        docker compose exec prod-api
+        sh -c "cd database && uv run alembic upgrade head"
+      args:
+        chdir: "{{ dest_path }}"

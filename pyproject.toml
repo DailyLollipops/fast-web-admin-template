@@ -111,6 +111,7 @@ api = [
     "sqlmodel>=0.0.24",
 ]
 dev = [
+    "ansible>=13.4.0",
     "click>=8.2.1",
     "nltk>=3.9.1",
     "playwright>=1.57.0",

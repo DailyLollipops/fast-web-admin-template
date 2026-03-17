@@ -105,6 +105,7 @@ def generate_caddy_config(app_name):
 @click.option('--jaeger-password', prompt=True, hide_input=True, confirmation_prompt=True, help='Jaeger admin password')
 def bootstrap(app_name: str, jaeger_username: str, jaeger_password: str):
     create_env_file(app_name, jaeger_username, jaeger_password, '.env')
+    create_env_file(app_name, jaeger_username, jaeger_password, 'provision/ansible/.env')
     create_compose_file(app_name, 'docker-compose.yml')
     create_caddy_file(app_name=app_name)
 
