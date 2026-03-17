@@ -98,9 +98,6 @@ services:
       - "--query.base-path=/jaeger"
     networks:
       - app_network
-    profiles:
-      - dev
-      - prod
 
   dev-api:
     build:
@@ -212,73 +209,6 @@ services:
     profiles:
       - prod
 
-  shared-api:
-    build:
-      target: api
-    container_name: {{ app_name }}-api
-    volumes:
-      - ./api:/workspace/app/api
-    command: uv run fastapi run /workspace/app/api/main.py --host 0.0.0.0 --port 8000
-    depends_on:
-      - mysql
-      - redis
-    networks:
-      - app_network
-      - proxy
-    environment:
-      <<:
-        - *python-env
-        - *mysql-env
-        - *redis-env
-        - *api-env
-        - *otel-env
-    profiles:
-      - shared
-
-  shared-web:
-    build:
-      target: web_prod
-    container_name: {{ app_name }}-web
-    command: serve -s dist -l 5173
-    depends_on:
-      - shared-api
-    networks:
-      - app_network
-      - proxy
-    profiles:
-      - shared
-
-  shared-caddy:
-    image: caddy:latest
-    container_name: {{ app_name }}-caddy
-    ports:
-      - 80
-      - 443
-    volumes:
-      - ./provision/caddy/Caddyfile.shared:/etc/caddy/Caddyfile
-      - shared_caddy_data:/data
-      - shared_caddy_config:/config
-    depends_on:
-      - shared-web
-      - shared-api
-    environment:
-      <<: *caddy-env
-    networks:
-      - app_network
-      - proxy
-    profiles:
-      - shared
-
-  shared-jaeger:
-    image: jaegertracing/all-in-one:latest
-    container_name: {{ app_name }}-jaeger
-    command:
-      - "--query.base-path=/jaeger"
-    networks:
-      - app_network
-    profiles:
-      - shared
-
   testing:
     build:
       target: testing
@@ -307,8 +237,6 @@ volumes:
   dev_caddy_config:
   prod_caddy_data:
   prod_caddy_config:
-  shared_caddy_data:
-  shared_caddy_config:
 
 networks:
   app_network:

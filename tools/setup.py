@@ -71,10 +71,6 @@ def create_caddy_file(app_name: str):
     with open(config_path / 'Caddyfile.prod', 'w') as file:
         file.write(output)
 
-    output = template.render(domain=':80', prefix=app_name)
-    with open(config_path / 'Caddyfile.shared', 'w') as file:
-        file.write(output)
-
 
 @click.group()
 def cli():
